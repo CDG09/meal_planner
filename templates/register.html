@@ -1,0 +1,17 @@
+{% extends base.html %}
+{% block content %}
+    <div class="starter-template">
+        <h1>Register your account </h1>
+        <p class="lead">Please type your account information </i></p>
+    </div>
+    <div id="main">
+        <form method="post" action="{{ url_for('submitted_form') }}">
+            <label for="username">Username:</label>
+            <input type="text" name="username"><br/>
+            <label for="password">Website URL:</label>
+            <input type="password" name="password"><br/>
+
+            <input type="submit">
+        </form>
+    </div>
+{% endblock %}
