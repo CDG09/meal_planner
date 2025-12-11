@@ -37,6 +37,24 @@
                     </li>
                 {% endfor %}
             </ul>
+            <!-- Right side login/logout -->
+            <ul class="navbar-nav ml-auto">
+                {% if current_user %}
+                    <li class="nav-item">
+                        <span class="navbar-text text-white mr-3">Welcome, {{ current_user.username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for ('auth.logout') }}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class ="nav-item {% if active_page == 'login' %}active{% endif %}">
+                        <a class="nav-link" href ="{{ url_for('auth.login') }}">Login</a>
+                    </li>
+                    <li class="nav-item {% if active_page == 'register' %}active{% endif %}">
+                        <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                    </li>
+                {% endif %}
+            </ul>
         </div>
     </nav>
 <!-- End Navbar -->

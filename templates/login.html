@@ -1,18 +1,18 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block content %}
     <div class="starter-template">
-        <h1>Register your account </h1>
-        <p class="lead">Please type your account information </i></p>
+        <h1>Login</h1>
+        <p class="lead">Enter your username and password</p>
     </div>
     <div id="main">
-        <form method="post" action="{{ url_for('auth.register') }}">
+        <form method="post" action="{{ url_for('auth.login') }}">
             <label for="username">Username:</label>
             <input type="text" name="username" required><br/>
-
+            
             <label for="password">Password:</label>
             <input type="password" name="password" required><br/>
 
-            <input type="submit" value="Register">
+            <input type="submit" value="Login">
         </form>
     </div>
 {% endblock %}
