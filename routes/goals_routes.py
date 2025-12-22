@@ -60,7 +60,7 @@ def edit_goal(goal_id):
 
     # Load the original goal for pre-filling the form
     original_goal = NutritionGoal.query.get_or_404(goal_id)
-    if original_goal.user_id != user_id:
+    if original_goal.user_id != user_id: # IDOR check
         flash('You cannot edit this goal.')
         return redirect(url_for('goals.view_goals'))
 

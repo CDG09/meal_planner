@@ -17,13 +17,25 @@ with app.app_context():
     db.create_all()
 
 # Blueprints
+
+# Goals routes
 from routes.goals_routes import goals
 app.register_blueprint(goals)
+
+# Auth routes
 
 from routes.auth_routes import auth
 app.register_blueprint(auth)
 
 app.config.from_object(Config)
+
+# Meal routes
+from routes.meal_routes import meal
+app.register_blueprint(meal)
+
+# Dashboard routes
+from routes.dashboard_routes import dashboard
+app.register_blueprint(dashboard)
 
 
 

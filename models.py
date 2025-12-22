@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from app import db
 from passlib.hash import sha256_crypt
@@ -27,6 +27,12 @@ class Meal(db.Model):
     name = db.Column(db.String(80), nullable=False) # Name of meal
     description = db.Column(db.String(255)) # Meal description
     added_at = db.Column(db.DateTime, default=db.func.current_timestamp()) # Time meal is stored in the app
+
+    # Nutritional info
+    calories = db.Column(db.Float, default=0.0)
+    protein = db.Column(db.Float, default=0.0)
+    fat = db.Column(db.Float, default=0.0)
+    carbs = db.Column(db.Float, default=0.0)
 
     user = db.relationship('User', backref=db.backref('meals', lazy=True))
 
@@ -83,3 +89,20 @@ class NutritionGoal(db.Model):
         else:
             self.goal_category = 'bulk'
         return self
+
+
+class DailyGoal(db.Model):
+    __tablename__ = 'daily_goals'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    goal_id = db.Column(db.Integer, db.ForeignKey('nutrition_goals.id'), nullable=False)
+    date = db.Column(db.Date, default=date.today, nullable=False)
+
+    remaining_calories = db.Column(db.Float, nullable=False)
+    remaining_protein = db.Column(db.Float, nullable=False)
+    remaining_fat = db.Column(db.Float, nullable=False)
+    remaining_carbs = db.Column(db.Float, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('daily_goals', lazy=True))
+    goal = db.relationship('NutritionGoal', backref=db.backref('daily_snapshots', lazy=True))
