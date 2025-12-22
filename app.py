@@ -1,5 +1,3 @@
-import os
-
 from flask import Flask, render_template, session
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
@@ -12,22 +10,26 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 
 # Model Imports
-from models import User
+from models import User, Meal, NutritionGoal
 
 # Create tables (if they don't exist)
 with app.app_context():
     db.create_all()
 
 # Blueprints
-from auth_routes import auth
+from routes.goals_routes import goals
+app.register_blueprint(goals)
+
+from routes.auth_routes import auth
 app.register_blueprint(auth)
 
 app.config.from_object(Config)
 
+
+
 # Context processors
 @app.context_processor
 def inject_user():
-    from models import User
     user_id = session.get('user_id')
     user = User.query.get(user_id) if user_id else None
     return dict(current_user=user)

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Edit Goal</h2>
+    <form method="POST">
+        <!-- Weight input -->
+        <div class="mb-3">
+            <label for="weight" class="form-label">Weight (kg)</label>
+            <input type="number" step="0.1" id="weight" name="weight" class="form-control"
+                   value="{{ goal.weight_kg }}" required>
+        </div>
+
+        <!-- Height input -->
+        <div class="mb-3">
+            <label for="height" class="form-label">Height (cm)</label>
+            <input type="number" step="0.1" id="height" name="height" class="form-control"
+                   value="{{ goal.height_cm }}" required>
+        </div>
+
+        <!-- Age input -->
+        <div class="mb-3">
+            <label for="age" class="form-label">Age</label>
+            <input type="number" step="1" id="age" name="age" class="form-control"
+                   value="{{ goal.age }}" required>
+        </div>
+
+        <!-- Goal slider -->
+        <div class="mb-4">
+            <label for="goal_percent" class="form-label">Goal Adjustment (%)</label>
+            <input type="range" class="form-range" min="-10" max="20" id="goal_percent" name="goal_percent"
+                   value="{{ goal.goal_percent }}" step="0.5" oninput="goalOutput.value = this.value">
+            <output id="goalOutput">{{ goal.goal_percent }}</output>%
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn-success">Update Goal</button>
+    </form>
+</div>
+
+<script>
+    // Initialize slider output
+    document.addEventListener('DOMContentLoaded', () => {
+        const slider = document.getElementById('goal_percent');
+        const output = document.getElementById('goalOutput');
+        output.value = slider.value;
+    });
+</script>
+{% endblock %}
+
+

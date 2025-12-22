@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Set a New Goal</h2>
+    <form method="POST">
+        <!-- Weight input -->
+        <div class="mb-3">
+            <label for="weight" class="form-label">Weight (kg)</label>
+            <input type="number" step="0.1" id="weight" name="weight" class="form-control" required>
+        </div>
+
+        <!-- Height input -->
+        <div class="mb-3">
+            <label for="height" class="form-label">Height (cm)</label>
+            <input type="number" step="0.1" id="height" name="height" class="form-control" required>
+        </div>
+
+        <!-- Age input -->
+        <div class="mb-3">
+            <label for="age" class="form-label">Age</label>
+            <input type="number" step="1" id="age" name="age" class="form-control" required>
+        </div>
+
+        <!-- Sex select -->
+        <div class="mb-3">
+            <label for="sex" class="form-label">Sex</label>
+            <select id="sex" name="sex" class="form-select" required>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
+
+        <!-- Activity level select -->
+        <div class="mb-3">
+            <label for="activity_level" class="form-label">Activity Level</label>
+            <select id="activity_level" name="activity_level" class="form-select" required>
+                <option value="sedentary">Sedentary</option>
+                <option value="light">Light</option>
+                <option value="moderate">Moderate</option>
+                <option value="active">Active</option>
+                <option value="very_active">Very Active</option>
+            </select>
+        </div>
+
+        <!-- Goal slider -->
+        <div class="mb-4">
+            <label for="goal_percent" class="form-label">Goal Adjustment (%)</label>
+            <input type="range" class="form-range" min="-10" max="20" value="0" id="goal_percent" name="goal_percent"
+                   oninput="goalOutput.value = this.value">
+            <output id="goalOutput">0</output>%
+            <small class="form-text text-muted">
+                Slide to adjust calories: negative for cutting, positive for bulking.
+            </small>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn-primary">Save Goal</button>
+    </form>
+</div>
+
+<script>
+    // Initialize slider output
+    document.addEventListener('DOMContentLoaded', () => {
+        const slider = document.getElementById('goal_percent');
+        const output = document.getElementById('goalOutput');
+        output.value = slider.value;
+    });
+</script>
+{% endblock %}
+
