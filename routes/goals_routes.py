@@ -3,11 +3,13 @@ from app import db
 from models import NutritionGoal
 from datetime import datetime
 
+from utils.auth import login_required
+
 goals = Blueprint('goals', __name__)
 
 @goals.route('/goals')
+@login_required
 def view_goals():
-    """View current goals"""
     user_id = session.get('user_id')
     if not user_id:
         flash('Please log in to view your goals.')
@@ -18,6 +20,7 @@ def view_goals():
 
 
 @goals.route('/goals/new', methods=['GET', 'POST'])
+@login_required
 def new_goal():
     """Create a new goal"""
     user_id = session.get('user_id')
@@ -52,6 +55,7 @@ def new_goal():
 
 
 @goals.route('/goals/<int:goal_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_goal(goal_id):
     user_id = session.get('user_id')
     if not user_id:
@@ -107,12 +111,10 @@ def edit_goal(goal_id):
     return render_template('edit_goal.html', goal=original_goal)
 
 @goals.route('/goals/<int:goal_id>/delete', methods=['GET', 'POST'])
+@login_required
 def delete_goal(goal_id):
     # Deletes users current goal
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in to delete your goals.')
-        return redirect(url_for('auth.login'))
 
     goal = NutritionGoal.query.get_or_404(goal_id)
 
@@ -127,6 +129,7 @@ def delete_goal(goal_id):
     return redirect(url_for('goals.view_goals'))
 
 @goals.route('/goals/delete_history', methods=['POST'])
+@login_required
 def delete_history(): # Deletes users entire goal history
     user_id = session.get('user_id')
     if not user_id:

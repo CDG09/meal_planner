@@ -1,17 +1,15 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from app import db
 from models import Meal
-from utils.goals import get_daily_goal  # <-- import your helper
+from utils.auth import login_required
+from utils.goals import get_daily_goal
 
 meal = Blueprint('meal', __name__)
 
 @meal.route('/add_meal', methods=['GET', 'POST'])
+@login_required
 def add_meal():
-    """Add a meal and update today's remaining daily goal"""
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please login to add a meal')
-        return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
         # Get data from form
@@ -22,6 +20,7 @@ def add_meal():
             protein = float(request.form.get('protein', 0))
             fat = float(request.form.get('fat', 0))
             carbs = float(request.form.get('carbs', 0))
+
         except ValueError:
             flash('Please enter a numeric value')
             return redirect(url_for('meal.add_meal'))
@@ -53,31 +52,71 @@ def add_meal():
     return render_template('add_meal.html')
 
 @meal.route('/my_meals')
+@login_required
 def my_meals():
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please login to view your meals')
-        return redirect(url_for('auth.login'))
 
     # Fetch current user's meals
     meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.id.desc()).all()
+
     return render_template('my_meals.html', meals=meals)
 
 @meal.route('/meal/<int:meal_id>/delete', methods=['POST'])
+@login_required
 def delete_meal(meal_id):
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please login to add a meal')
-        return redirect(url_for('auth.login'))
 
     meal_delete = Meal.query.get_or_404(meal_id)
 
-    if meal_delete.user_id != user_id: # IDOR handling
+    # IDOR check: make sure user owns this meal
+    if meal_delete.user_id != user_id:
         flash('You cannot delete this meal')
         return redirect(url_for('meal.my_meals'))
 
+    # Add meal's calories/macros back to daily goal
+    daily_goal = get_daily_goal(user_id)
+    if daily_goal:
+        daily_goal.remaining_calories += meal_delete.calories
+        daily_goal.remaining_protein += meal_delete.protein
+        daily_goal.remaining_fat += meal_delete.fat
+        daily_goal.remaining_carbs += meal_delete.carbs
+
     db.session.delete(meal_delete)
     db.session.commit()
-    flash('You have successfully deleted this meal')
+    flash('You have successfully deleted this meal and updated today\'s goal')
+    return redirect(url_for('meal.my_meals'))
+
+@meal.route('/meal/<int:meal_id>/toggle', methods=['POST'])
+@login_required
+def toggle_meal(meal_id):
+    user_id = session.get('user_id')
+
+    meal_obj = Meal.query.get_or_404(meal_id)
+    if meal_obj.user_id != user_id:  # IDOR protection
+        flash('You cannot modify this meal')
+        return redirect(url_for('meal.my_meals'))
+
+    daily_goal = get_daily_goal(user_id)
+    if not daily_goal:
+        flash('Daily goal not found')
+        return redirect(url_for('meal.my_meals'))
+
+    # Toggle eaten state
+    if meal_obj.eaten_today:
+        # Unmark: add back macros to daily goal
+        daily_goal.remaining_calories += meal_obj.calories
+        daily_goal.remaining_protein += meal_obj.protein
+        daily_goal.remaining_fat += meal_obj.fat
+        daily_goal.remaining_carbs += meal_obj.carbs
+        meal_obj.eaten_today = False
+    else:
+        # Mark as eaten: subtract macros from daily goal
+        daily_goal.remaining_calories = max(daily_goal.remaining_calories - meal_obj.calories, 0)
+        daily_goal.remaining_protein = max(daily_goal.remaining_protein - meal_obj.protein, 0)
+        daily_goal.remaining_fat = max(daily_goal.remaining_fat - meal_obj.fat, 0)
+        daily_goal.remaining_carbs = max(daily_goal.remaining_carbs - meal_obj.carbs, 0)
+        meal_obj.eaten_today = True
+
+    db.session.commit()
     return redirect(url_for('meal.my_meals'))
 

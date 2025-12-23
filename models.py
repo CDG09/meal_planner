@@ -23,7 +23,7 @@ class Meal(db.Model):
     __tablename__ = 'meals'
 
     id = db.Column(db.Integer, primary_key=True) # Primary key
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False) # Foreign key linking meal to user
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False) # Foreign key linking meal to user
     name = db.Column(db.String(80), nullable=False) # Name of meal
     description = db.Column(db.String(255)) # Meal description
     added_at = db.Column(db.DateTime, default=db.func.current_timestamp()) # Time meal is stored in the app
@@ -33,6 +33,8 @@ class Meal(db.Model):
     protein = db.Column(db.Float, default=0.0)
     fat = db.Column(db.Float, default=0.0)
     carbs = db.Column(db.Float, default=0.0)
+
+    eaten_today = db.Column(db.Boolean, default=False)
 
     user = db.relationship('User', backref=db.backref('meals', lazy=True))
 
@@ -105,4 +107,4 @@ class DailyGoal(db.Model):
     remaining_carbs = db.Column(db.Float, nullable=False)
 
     user = db.relationship('User', backref=db.backref('daily_goals', lazy=True))
-    goal = db.relationship('NutritionGoal', backref=db.backref('daily_snapshots', lazy=True))
+    goal = db.relationship('NutritionGoal', backref=db.backref('daily_snapshots', lazy=True,cascade='all, delete-orphan'))

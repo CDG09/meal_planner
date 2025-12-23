@@ -1,24 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Today's Dashboard</h2>
+<h2>Daily Nutrition Dashboard</h2>
 
-    <div class="card mt-3">
-        <div class="card-body">
+<table class="table">
+    <tr>
+        <th>Calories Remaining</th>
+        <td>{{ daily_goal.remaining_calories }}</td>
+    </tr>
+    <tr>
+        <th>Protein Remaining</th>
+        <td>{{ daily_goal.remaining_protein }}</td>
+    </tr>
+    <tr>
+        <th>Fat Remaining</th>
+        <td>{{ daily_goal.remaining_fat }}</td>
+    </tr>
+    <tr>
+        <th>Carbs Remaining</th>
+        <td>{{ daily_goal.remaining_carbs }}</td>
+    </tr>
+</table>
 
-            <h5 class="card-title">Remaining for Today</h5>
-
-            <p><strong>Calories:</strong> {{ daily_goal.remaining_calories | round }}</p>
-            <p><strong>Protein:</strong> {{ daily_goal.remaining_protein | round }} g</p>
-            <p><strong>Fat:</strong> {{ daily_goal.remaining_fat | round }} g</p>
-            <p><strong>Carbs:</strong> {{ daily_goal.remaining_carbs | round }} g</p>
-
-        </div>
-    </div>
-
-    <a href="{{ url_for('meal.add_meal') }}" class="btn btn-primary mt-3">
-        Log a Meal
-    </a>
-</div>
+<a href="{{ url_for('meal.add_meal') }}" class="btn btn-primary">
+    Add Meal
+</a>
 {% endblock %}
+

@@ -1,10 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<h2>My Meals</h2>
+
+{% if meals %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Meal</th>
+            <th>Calories</th>
+            <th>Protein</th>
+            <th>Fat</th>
+            <th>Carbs</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for meal in meals %}
+        <tr {% if meal.eaten_today %}class="table-success"{% endif %}>
+            <td>{{ meal.name }}</td>
+            <td>{{ meal.calories }}</td>
+            <td>{{ meal.protein }}</td>
+            <td>{{ meal.fat }}</td>
+            <td>{{ meal.carbs }}</td>
+            <td>
+                <!-- Toggle eaten -->
+                <form action="{{ url_for('meal.toggle_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-sm {% if meal.eaten_today %}btn-secondary{% else %}btn-success{% endif %}">
+                        {% if meal.eaten_today %}Uneat{% else %}Eat{% endif %}
+                    </button>
+                </form>
+
+                <!-- Delete meal -->
+                <form action="{{ url_for('meal.delete_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No meals logged yet.</p>
+{% endif %}
+{% endblock %}
