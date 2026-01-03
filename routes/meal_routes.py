@@ -38,16 +38,8 @@ def add_meal():
         )
         db.session.add(new_meal)
 
-        # Update today's daily goal
-        daily_goal = get_daily_goal(user_id)
-        if daily_goal:
-            daily_goal.remaining_calories = max(daily_goal.remaining_calories - calories, 0)
-            daily_goal.remaining_protein = max(daily_goal.remaining_protein - protein, 0)
-            daily_goal.remaining_fat = max(daily_goal.remaining_fat - fat, 0)
-            daily_goal.remaining_carbs = max(daily_goal.remaining_carbs - carbs, 0)
-
         db.session.commit()
-        flash('Your meal has been added and today\'s goal updated!')
+        flash('Your meal has been added!')
         return redirect(url_for('meal.my_meals'))
 
     return render_template('add_meal.html')
@@ -56,11 +48,20 @@ def add_meal():
 @login_required
 def my_meals():
     user_id = session.get('user_id')
+    today = date.today()
 
     # Fetch current user's meals
     meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.id.desc()).all()
 
-    return render_template('my_meals.html', meals=meals)
+    # Meal already logged
+    logged_meal_ids = {log.meal_id for log in MealLog.query.filter_by(user_id=user_id, date=today).all()}
+
+    for meal in meals:
+        meal.eaten_today = meal.id in logged_meal_ids
+
+    # Fetch daily goal for summary
+    daily_goal = get_daily_goal(user_id)
+    return render_template('my_meals.html', meals=meals, logged_meal_ids=logged_meal_ids,daily_goal=daily_goal)
 
 @meal.route('/meal/<int:meal_id>/delete', methods=['POST'])
 @login_required
@@ -74,13 +75,19 @@ def delete_meal(meal_id):
         flash('You cannot delete this meal')
         return redirect(url_for('meal.my_meals'))
 
-    # Add meal's calories/macros back to daily goal
+    # Get daily goal
     daily_goal = get_daily_goal(user_id)
-    if daily_goal:
-        daily_goal.remaining_calories += meal_delete.calories
-        daily_goal.remaining_protein += meal_delete.protein
-        daily_goal.remaining_fat += meal_delete.fat
-        daily_goal.remaining_carbs += meal_delete.carbs
+
+    # Delete logs and restore intake
+    logs = MealLog.query.filter_by(meal_id=meal_id, user_id=user_id, date=date.today()).all()
+
+    for log in logs:
+        if daily_goal:
+            daily_goal.remaining_calories += log.calories
+            daily_goal.remaining_protein += log.protein
+            daily_goal.remaining_fat += log.fat
+            daily_goal.remaining_carbs += log.carbs
+        db.session.delete(log)
 
     db.session.delete(meal_delete)
     db.session.commit()
@@ -99,12 +106,12 @@ def log_meal(meal_id):
         flash('You cannot log this meal')
         return redirect(url_for('meal.my_meals'))
 
-    if not get_daily_goal(user_id):
-        flash('No daily goal found')
-        return redirect(url_for('dashboard.view_dashboard'))
-
 
     today = date.today()
+    daily_goal = get_daily_goal(user_id)
+    if not daily_goal:
+        flash("No daily goal found. Please set one first!")
+        return redirect(url_for('dashboard.view_dashboard'))
 
     # Prevent duplicate logs for same day
     existing_log = MealLog.query.filter_by(
@@ -118,7 +125,7 @@ def log_meal(meal_id):
         return redirect(url_for('meal.my_meals'))
 
     # Create log entry
-    log = MealLog(
+    log_entry = MealLog(
         user_id=user_id,
         meal_id=meal_id,
         date=today,
@@ -128,7 +135,7 @@ def log_meal(meal_id):
         carbs=meal_log.carbs
     )
 
-    db.session.add(log)
+    db.session.add(log_entry)
 
     # Update daily goal
     daily_goal = get_daily_goal(user_id)
@@ -140,6 +147,29 @@ def log_meal(meal_id):
 
     db.session.commit()
     flash('Meal logged for today')
+    return redirect(url_for('meal.my_meals'))
+
+@meal.route('/meal/<int:meal_id>/unlog', methods=['POST'])
+@login_required
+def unlog_meal(meal_id):
+    user_id = session.get('user_id')
+    today = date.today()
+
+    # Today's log
+    log = MealLog.query.filter_by(user_id=user_id, meal_id=meal_id, date=today).first()
+    if not log:
+        flash('This meal was not logged today')
+        return redirect(url_for('meal.my_meals'))
+    daily_goal = get_daily_goal(user_id)
+    if daily_goal:
+        daily_goal.remaining_calories += log.calories
+        daily_goal.remaining_protein += log.protein
+        daily_goal.remaining_fat += log.fat
+        daily_goal.remaining_carbs += log.carbs
+
+    db.session.delete(log)
+    db.session.commit()
+    flash('You have successfully unlogged this meal for today')
     return redirect(url_for('meal.my_meals'))
 
 
