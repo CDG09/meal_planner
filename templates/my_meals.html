@@ -25,7 +25,7 @@
             <td>{{ meal.carbs }}</td>
             <td>
                 <!-- Toggle eaten -->
-                <form action="{{ url_for('meal.toggle_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
+                <form action="{{ url_for('meal.log_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
                     <button type="submit" class="btn btn-sm {% if meal.eaten_today %}btn-secondary{% else %}btn-success{% endif %}">
                         {% if meal.eaten_today %}Uneat{% else %}Eat{% endif %}
                     </button>

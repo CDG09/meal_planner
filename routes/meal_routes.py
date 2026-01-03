@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from app import db
-from models import Meal
+from models import Meal, MealLog
+from datetime import datetime, date
 from utils.auth import login_required
 from utils.goals import get_daily_goal
 
@@ -86,37 +87,59 @@ def delete_meal(meal_id):
     flash('You have successfully deleted this meal and updated today\'s goal')
     return redirect(url_for('meal.my_meals'))
 
-@meal.route('/meal/<int:meal_id>/toggle', methods=['POST'])
+@meal.route('/meal/<int:meal_id>/log', methods=['POST'])
 @login_required
-def toggle_meal(meal_id):
+def log_meal(meal_id):
     user_id = session.get('user_id')
 
-    meal_obj = Meal.query.get_or_404(meal_id)
-    if meal_obj.user_id != user_id:  # IDOR protection
-        flash('You cannot modify this meal')
+    meal_log = Meal.query.get_or_404(meal_id)
+
+    # IDOR protection
+    if meal_log.user_id != user_id:
+        flash('You cannot log this meal')
         return redirect(url_for('meal.my_meals'))
 
+    if not get_daily_goal(user_id):
+        flash('No daily goal found')
+        return redirect(url_for('dashboard.view_dashboard'))
+
+
+    today = date.today()
+
+    # Prevent duplicate logs for same day
+    existing_log = MealLog.query.filter_by(
+        user_id=user_id,
+        meal_id=meal_id,
+        date=today
+    ).first()
+
+    if existing_log:
+        flash('You already logged this meal today')
+        return redirect(url_for('meal.my_meals'))
+
+    # Create log entry
+    log = MealLog(
+        user_id=user_id,
+        meal_id=meal_id,
+        date=today,
+        calories=meal_log.calories,
+        protein=meal_log.protein,
+        fat=meal_log.fat,
+        carbs=meal_log.carbs
+    )
+
+    db.session.add(log)
+
+    # Update daily goal
     daily_goal = get_daily_goal(user_id)
-    if not daily_goal:
-        flash('Daily goal not found')
-        return redirect(url_for('meal.my_meals'))
-
-    # Toggle eaten state
-    if meal_obj.eaten_today:
-        # Unmark: add back macros to daily goal
-        daily_goal.remaining_calories += meal_obj.calories
-        daily_goal.remaining_protein += meal_obj.protein
-        daily_goal.remaining_fat += meal_obj.fat
-        daily_goal.remaining_carbs += meal_obj.carbs
-        meal_obj.eaten_today = False
-    else:
-        # Mark as eaten: subtract macros from daily goal
-        daily_goal.remaining_calories = max(daily_goal.remaining_calories - meal_obj.calories, 0)
-        daily_goal.remaining_protein = max(daily_goal.remaining_protein - meal_obj.protein, 0)
-        daily_goal.remaining_fat = max(daily_goal.remaining_fat - meal_obj.fat, 0)
-        daily_goal.remaining_carbs = max(daily_goal.remaining_carbs - meal_obj.carbs, 0)
-        meal_obj.eaten_today = True
+    if daily_goal:
+        daily_goal.remaining_calories = max(daily_goal.remaining_calories - meal_log.calories, 0)
+        daily_goal.remaining_protein = max(daily_goal.remaining_protein - meal_log.protein, 0)
+        daily_goal.remaining_fat = max(daily_goal.remaining_fat - meal_log.fat, 0)
+        daily_goal.remaining_carbs = max(daily_goal.remaining_carbs - meal_log.carbs, 0)
 
     db.session.commit()
+    flash('Meal logged for today')
     return redirect(url_for('meal.my_meals'))
+
 

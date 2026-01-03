@@ -37,8 +37,6 @@ app.register_blueprint(meal)
 from routes.dashboard_routes import dashboard
 app.register_blueprint(dashboard)
 
-
-
 # Context processors
 @app.context_processor
 def inject_user():

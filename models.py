@@ -27,6 +27,7 @@ class Meal(db.Model):
     name = db.Column(db.String(80), nullable=False) # Name of meal
     description = db.Column(db.String(255)) # Meal description
     added_at = db.Column(db.DateTime, default=db.func.current_timestamp()) # Time meal is stored in the app
+    meal_type = db.Column(db.String(20)) # Breakfast, Lunch, Dinner
 
     # Nutritional info
     calories = db.Column(db.Float, default=0.0)
@@ -34,10 +35,21 @@ class Meal(db.Model):
     fat = db.Column(db.Float, default=0.0)
     carbs = db.Column(db.Float, default=0.0)
 
-    eaten_today = db.Column(db.Boolean, default=False)
 
     user = db.relationship('User', backref=db.backref('meals', lazy=True))
 
+class MealLog(db.Model):
+    __tablename__ = 'meal_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    meal_id = db.Column(db.Integer, db.ForeignKey('meals.id'), nullable=False)
+
+    date = db.Column(db.Date, default=date.today, nullable=False)
+    calories = db.Column(db.Float, nullable=False)
+    protein = db.Column(db.Float, nullable=False)
+    fat = db.Column(db.Float, nullable=False)
+    carbs = db.Column(db.Float, nullable=False)
 
 class NutritionGoal(db.Model):
     __tablename__ = 'nutrition_goals'
