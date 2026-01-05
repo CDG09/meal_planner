@@ -4,23 +4,37 @@ from models import Meal, MealLog
 from datetime import datetime, date
 from utils.auth import login_required
 from utils.goals import get_daily_goal
-
+from utils.ingredients import get_ingredient_by_id, calculate_macros_from_ingredients, get_all_ingredients
+from utils import fatsecret
 meal = Blueprint('meal', __name__)
 
 @meal.route('/add_meal', methods=['GET', 'POST'])
 @login_required
 def add_meal():
     user_id = session.get('user_id')
+    ingredients = get_all_ingredients(user_id)
 
     if request.method == 'POST':
         # Get data from form
         try:
             name = request.form.get('name')
             description = request.form.get('description')
-            calories = float(request.form.get('calories', 0))
-            protein = float(request.form.get('protein', 0))
-            fat = float(request.form.get('fat', 0))
-            carbs = float(request.form.get('carbs', 0))
+            ingredient_ids = request.form.getlist('ingredient_ids')
+
+            if ingredient_ids:
+                ingredient_docs = get_ingredient_by_id(ingredient_ids, user_id)
+
+                macros = calculate_macros_from_ingredients(ingredient_docs)
+                calories = macros['calories']
+                protein = macros['protein']
+                fat = macros['fat']
+                carbs = macros['carbs']
+
+            else:
+                calories = float(request.form.get('calories', 0))
+                protein = float(request.form.get('protein', 0))
+                fat = float(request.form.get('fat', 0))
+                carbs = float(request.form.get('carbs', 0))
 
         except ValueError:
             flash('Please enter a numeric value')
@@ -42,7 +56,7 @@ def add_meal():
         flash('Your meal has been added!')
         return redirect(url_for('meal.my_meals'))
 
-    return render_template('add_meal.html')
+    return render_template('add_meal.html', ingredients=ingredients)
 
 @meal.route('/my_meals')
 @login_required
@@ -171,5 +185,4 @@ def unlog_meal(meal_id):
     db.session.commit()
     flash('You have successfully unlogged this meal for today')
     return redirect(url_for('meal.my_meals'))
-
 
