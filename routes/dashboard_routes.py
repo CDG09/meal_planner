@@ -13,7 +13,7 @@ def view_dashboard():
     # Get or create today's daily goal
     daily_goal = get_daily_goal(user_id)
     if not daily_goal:
-        flash('Please set a nutrition goal first')
+        flash('Please set a nutrition goal first', 'warning')
         return redirect(url_for('goals.new_goal'))
 
         # Fetch meals logged today

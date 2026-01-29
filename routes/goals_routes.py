@@ -12,7 +12,7 @@ goals = Blueprint('goals', __name__)
 def view_goals():
     user_id = session.get('user_id')
     if not user_id:
-        flash('Please log in to view your goals.')
+        flash('Please log in to view your goals.', 'warning')
         return redirect(url_for('auth.login'))
 
     user_goals = NutritionGoal.query.filter_by(user_id=user_id).order_by(NutritionGoal.created_at.desc()).all()
@@ -25,7 +25,7 @@ def new_goal():
     """Create a new goal"""
     user_id = session.get('user_id')
     if not user_id:
-        flash('Please log in to create a goal.')
+        flash('Please log in to create a goal.', 'warning')
         return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
@@ -41,14 +41,14 @@ def new_goal():
                 created_at=datetime.now()
             )
         except (ValueError,KeyError):
-            flash('Please provide valid values for all fields.')
+            flash('Please provide valid values for all fields.', 'warning')
             return redirect(url_for('goals.new_goal'))
 
         goal.calculate_goal()
         db.session.add(goal)
         db.session.commit()
 
-        flash('You have successfully created a new goal.')
+        flash('You have successfully created a new goal.', 'success')
         return redirect(url_for('goals.view_goals'))
 
     return render_template('add_goal.html')
@@ -59,13 +59,13 @@ def new_goal():
 def edit_goal(goal_id):
     user_id = session.get('user_id')
     if not user_id:
-        flash('Please log in to edit your goals.')
+        flash('Please log in to edit your goals.', 'warning')
         return redirect(url_for('auth.login'))
 
     # Load the original goal for pre-filling the form
     original_goal = NutritionGoal.query.get_or_404(goal_id)
     if original_goal.user_id != user_id: # IDOR check
-        flash('You cannot edit this goal.')
+        flash('You cannot edit this goal.', 'danger')
         return redirect(url_for('goals.view_goals'))
 
     if request.method == 'POST':
@@ -76,7 +76,7 @@ def edit_goal(goal_id):
             age = int(request.form['age'])
             goal_percent = float(request.form['goal_percent'])
         except (ValueError, KeyError):
-            flash('Please provide valid values for all fields.')
+            flash('Please provide valid values for all fields.', 'warning')
             return redirect(url_for('goals.edit_goal', goal_id=goal_id))
 
         if weight != original_goal.weight_kg or height != original_goal.height_cm or age != original_goal.age:
@@ -101,7 +101,7 @@ def edit_goal(goal_id):
             original_goal.goal_percent = goal_percent
             original_goal.calculate_goal()
             db.session.commit()
-            flash('Your goal has been updated.')
+            flash('Your goal has been updated.', 'success')
         else:
             flash('No changes have been made.')
 
@@ -120,12 +120,12 @@ def delete_goal(goal_id):
 
     # User can only delete their own goals (IDOR handling)
     if goal.user_id != user_id:
-        flash('You cannot delete this goal.')
+        flash('You cannot delete this goal.', 'warning')
         return redirect(url_for('goals.view_goals'))
 
     db.session.delete(goal)
     db.session.commit()
-    flash('You have successfully deleted this goal.')
+    flash('You have successfully deleted this goal.', 'success')
     return redirect(url_for('goals.view_goals'))
 
 @goals.route('/goals/delete_history', methods=['POST'])
@@ -133,20 +133,20 @@ def delete_goal(goal_id):
 def delete_history(): # Deletes users entire goal history
     user_id = session.get('user_id')
     if not user_id:
-        flash('Please log in to delete your goal history.')
+        flash('Please log in to delete your goal history.', 'warning')
         return redirect(url_for('auth.login'))
 
     user_goals = NutritionGoal.query.filter_by(user_id=user_id).all()
 
     if not user_goals:
-        flash('No goal history to delete.')
+        flash('No goal history to delete.', 'warning')
         return redirect(url_for('goals.view_goals'))
 
     for goal in user_goals:
         db.session.delete(goal)
 
     db.session.commit()
-    flash('Your goal history has been deleted.')
+    flash('Your goal history has been deleted.', 'success')
     return redirect(url_for('goals.view_goals'))
 
 

@@ -18,7 +18,16 @@
     <tbody>
         {% for meal in meals %}
         <tr {% if meal.eaten_today %}class="table-success"{% endif %}>
-            <td>{{ meal.name }}</td>
+            <td>
+                <strong>{{ meal.name }}</strong>
+                {% if meal.ingredient_names %}
+                    <br>
+                    <small class="text-muted">
+                        Ingredients:
+                        {{ meal.ingredients_names | join(', ') }}
+                    </small>
+                {% endif %}
+            </td>
             <td>{{ meal.calories }}</td>
             <td>{{ meal.protein }}</td>
             <td>{{ meal.fat }}</td>

@@ -1,0 +1,42 @@
+/* ===== Body padding for fixed navbar ===== */
+body {
+    padding-top: 70px; /* Adjust to your navbar height */
+}
+
+/* ===== Main container padding ===== */
+main.container {
+    padding-top: 0; /* No extra margin, spacing handled by body padding */
+}
+
+/* ===== Flash messages styling ===== */
+.flash-container {
+    width: 100%; /* full width in-flow container */
+}
+
+/* Individual alerts */
+.flash-container .alert {
+    transition: opacity 0.5s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease;
+    max-height: 200px;   /* Smooth collapse on dismiss */
+    overflow: hidden;
+    margin-bottom: 0.5rem; /* spacing between stacked alerts */
+    opacity: 1; /* ⚡ Ensure flashes are visible on page load */
+    font-size: 0.95rem;
+}
+
+
+.flash-container .alert.fade {
+
+}
+
+/* Close button tweaks */
+.flash-container .alert .close {
+    line-height: 1.2;
+}
+
+
+
+
+
+
+
+

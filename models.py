@@ -3,6 +3,7 @@ from datetime import datetime, date
 from app import db
 from passlib.hash import sha256_crypt
 from utils.nutrition import bmr_calculation, tdee_calculation, macros_calculation
+from sqlalchemy.dialects.postgresql import JSON
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -28,6 +29,7 @@ class Meal(db.Model):
     description = db.Column(db.String(255)) # Meal description
     added_at = db.Column(db.DateTime, default=db.func.current_timestamp()) # Time meal is stored in the app
     meal_type = db.Column(db.String(20)) # Breakfast, Lunch, Dinner
+    ingredients_ids = db.Column(JSON, nullable=True)
 
     # Nutritional info
     calories = db.Column(db.Float, default=0.0)

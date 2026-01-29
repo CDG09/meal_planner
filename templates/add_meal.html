@@ -4,50 +4,35 @@
 <div class="container mt-5">
     <h2 class="mb-4">Add a Meal</h2>
 
+    <!-- Ingredient Search -->
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">Search Food Database</h5>
-            <form method="POST" action="{{ url_for('meal.add_meal') }}">
-                <input type="hidden" name="action" value="fatsecret_search">
+            <h5 class="card-title">Search Ingredient Database</h5>
+            <div class="input-group">
+                <input type="text" class="form-control" id="ingredient-search" placeholder="Search for ingredient">
+                <button class="btn btn-outline-primary" id="ingredient-search-btn" type="button">Search</button>
+            </div>
+            <!-- Search Results -->
+            <ul class="list-group mt-2" id="ingredient-results"></ul>
+        </div>
+    </div>
 
-                <div class="input-group">
-                    <input
-                            type="text"
-                            class="form-control"
-                            name="query"
-                            placeholder="Search for food"
-                    >
-                    <button class="btn btn-outline-primary" type="submit">
-                        Search
-                    </button>
-                </div>
-            </form>
-            {% if fatsecret_results %}
-            <hr>
-            <p class="mb-2"><strong>Select food:</strong></p>
-
-            <ul class="list-group">
-                {% for food in fatsecret_results %}
-                    <li class="list-group-item">
-                        <form method="POST" action="{{ url_for('meal.add_meal') }}">
-                            <input type="hidden" name="action" value="fatsecret_import">
-                            <input type="hidden" name="food_id" value="{{ food.food_id }}">
-                            <button type="submit" class="btn btn-link p-0">
-                                {{ food.food_name }}
-                                {% if food.food_description %}
-                                    <small class="text-muted">- {{ food.food_description }}</small>
-                                {% endif %}
-                            </button>
-                        </form>
-                    </li>
-                {% endfor %}
+    <!-- Selected Ingredients List -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Selected Ingredients</h5>
+            <ul class="list-group" id="selected-ingredients-list">
+                <li class="list-group-item text-muted">
+                    No ingredients added yet
+                </li>
             </ul>
-            {% endif %}
         </div>
     </div>
 
     <!-- Form to add a meal -->
     <form action="{{ url_for('meal.add_meal') }}" method="POST">
+        <input type="hidden" name="ingredient_ids" id="ingredient-ids">
+
         <!-- Meal Name -->
         <div class="form-group">
             <label for="name">Meal Name</label>
@@ -60,33 +45,31 @@
             <textarea class="form-control" id="description" name="description" placeholder="Enter description"></textarea>
         </div>
 
-        <!-- Calories -->
+        <!-- Macros -->
         <div class="form-group">
             <label for="calories">Calories</label>
             <input type="number" step="0.1" class="form-control" id="calories" name="calories" placeholder="0" required>
         </div>
-
-        <!-- Protein -->
         <div class="form-group">
             <label for="protein">Protein (g)</label>
             <input type="number" step="0.1" class="form-control" id="protein" name="protein" placeholder="0" required>
         </div>
-
-        <!-- Fat -->
         <div class="form-group">
             <label for="fat">Fat (g)</label>
             <input type="number" step="0.1" class="form-control" id="fat" name="fat" placeholder="0" required>
         </div>
-
-        <!-- Carbs -->
         <div class="form-group">
             <label for="carbs">Carbs (g)</label>
             <input type="number" step="0.1" class="form-control" id="carbs" name="carbs" placeholder="0" required>
         </div>
 
-        <!-- Submit Button -->
+        <!-- Submit -->
         <button type="submit" class="btn btn-primary">Add Meal</button>
         <a href="{{ url_for('meal.my_meals') }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='js/add_meal.js') }}"></script>
 {% endblock %}
+

@@ -8,18 +8,18 @@ auth = Blueprint('auth', __name__)
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip().lower()
         password = request.form['password']
 
         # Require each field to be set
         if not username or not password:
-            flash('Please enter both username and password.')
+            flash('Please enter both username and password.', 'warning')
             return redirect(url_for('auth.register'))
 
         # Check if user already exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
-            flash('User {} already exists.'.format(username))
+            flash('User {} already exists.'.format(username), 'danger')
             return redirect(url_for('auth.register'))
 
         # Create new user
@@ -27,7 +27,7 @@ def register():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
-        flash('User {} created!'.format(username))
+        flash('User {} created!'.format(username), 'success')
         return redirect(url_for('home'))
 
     return render_template('register.html', active_page='register')
@@ -42,10 +42,10 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password): # Verify hashed password
             session['user_id'] = user.id
-            flash('Welcome {}!'.format(user.username))
+            flash('Welcome {}!'.format(user.username), 'success')
             return redirect(url_for('home'))
         else:
-            flash('Invalid username or password.')
+            flash('Invalid username or password.', 'danger')
             return redirect(url_for('auth.login'))
     return render_template('login.html', active_page='login')
 
@@ -53,5 +53,5 @@ def login():
 @auth.route('/logout')
 def logout():
     session.pop('user_id', None)
-    flash('You have been logged out')
+    flash('You have been logged out', 'success')
     return redirect(url_for('home'))
