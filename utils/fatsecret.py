@@ -3,19 +3,27 @@ import requests
 from requests_oauthlib import OAuth1
 
 # Environment variables
+UNIT_TESTING = os.getenv("UNIT_TESTING") == "1"
 FATSECRET_BASE_URL = "https://platform.fatsecret.com/rest/server.api"
-FATSECRET_CONSUMER_KEY = os.getenv("FATSECRET_CONSUMER_KEY")
-FATSECRET_CONSUMER_SECRET = os.getenv("FATSECRET_CONSUMER_SECRET")
 
-if not FATSECRET_CONSUMER_KEY or not FATSECRET_CONSUMER_SECRET:
-    raise RuntimeError("FatSecret API not configured")
 
 def check_configured():
+    if UNIT_TESTING:
+        return
+
+    FATSECRET_CONSUMER_KEY = os.getenv("FATSECRET_CONSUMER_KEY")
+    FATSECRET_CONSUMER_SECRET = os.getenv("FATSECRET_CONSUMER_SECRET")
+
     if not FATSECRET_CONSUMER_KEY or not FATSECRET_CONSUMER_SECRET:
         raise RuntimeError("FatSecret API not configured.")
+    return FATSECRET_CONSUMER_KEY, FATSECRET_CONSUMER_SECRET
 
 # OAuth Details
 def oauth():
+    if UNIT_TESTING:
+        return OAuth1(client_key="test", client_secret="test", signature_method="HMAC-SHA1")
+
+    FATSECRET_CONSUMER_KEY, FATSECRET_CONSUMER_SECRET = check_configured()
     return OAuth1(
         client_key=FATSECRET_CONSUMER_KEY,
         client_secret=FATSECRET_CONSUMER_SECRET,
