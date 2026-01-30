@@ -4,6 +4,7 @@
 <div class="container mt-5">
     <h2 class="mb-4">Edit Goal</h2>
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <!-- Weight input -->
         <div class="mb-3">
             <label for="weight" class="form-label">Weight (kg)</label>

@@ -1,16 +1,26 @@
-from flask import Blueprint, jsonify, session, request
+from flask import Blueprint, jsonify, session, request, current_app
 from datetime import date
 from utils.auth import login_required
 from utils.ingredients import get_all_ingredients, create_ingredient, get_ingredient_by_id, calculate_macros_from_ingredients
 from services.goals_service import get_or_create_daily_goal
 from models import Meal, MealLog
-from app import db
+from app import db, csrf, limiter
+
+
 
 api = Blueprint('api', __name__, url_prefix='/api') # Creates API blueprint to be separated from HTML routes
+csrf.exempt(api)
 
+@api.before_request
+def api_auth_guard():
+    token = request.headers.get("X-API-Token", "").strip()
+    expected = (current_app.config.get("API_TOKEN") or "").strip()
+    if not expected:
+        return jsonify({"error": "API token not configured"}), 500
+    if token != expected:
+        return jsonify({"error": "Unauthorized"}), 401
 
 # Ingredient routes
-
 @api.get("/daily-goal/today")
 @login_required
 def api_daily_goal_today():
@@ -36,6 +46,7 @@ def api_daily_goal_today():
 
 @api.post("/meals/<int:meal_id>/log")
 @login_required
+@limiter.limit("15/minute")
 def api_log_meal(meal_id: int):
     user_id = session.get("user_id")
     today = date.today()
@@ -110,6 +121,7 @@ def api_list_ingredients(): # Returns all ingredients for the current user
     return jsonify(out), 200
 
 @api.post("/ingredients")
+@limiter.limit("10/minute")
 @login_required
 def api_create_manual_ingredient():  # Creates a manual ingredient in MongoDB
     user_id = session.get("user_id")
@@ -180,6 +192,7 @@ def api_get_meal(meal_id: int):
 
 @api.post("/meals")
 @login_required
+@limiter.limit("10/minute")
 def api_create_meal():
     user_id = session.get("user_id")
     data = request.get_json(silent=True) or {}

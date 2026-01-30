@@ -1,10 +1,20 @@
 from flask import Flask, render_template, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from config import Config
 import os
 
+
 #Initialize SQLAlchemy
 db = SQLAlchemy()
+
+# Call CSRF protection function
+csrf = CSRFProtect()
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 def create_app(test_config: dict | None = None):
     # Initialize Flask app
@@ -15,7 +25,8 @@ def create_app(test_config: dict | None = None):
         app.config.update(test_config)
 
     db.init_app(app)
-
+    csrf.init_app(app) # Initiate CSRF protection within the app
+    limiter.init_app(app) # Initiate rate limiting
     with app.app_context():
         from models import User, Meal, NutritionGoal
 
@@ -60,6 +71,24 @@ def create_app(test_config: dict | None = None):
     @app.route('/')
     def home():
         return render_template('home.html', active_page='home')
+
+    @app.after_request
+    def add_security_header(response):
+        # Prevent file type sniffing (Mime)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Prevent click-jacking
+        response.headers["X-Frame-Options"] = "DENY"
+        # Introduce a strict Referrer policy
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Content security policy
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline' https://stackpath.bootstrapcdn.com; "
+            "script-src 'self' https://stackpath.bootstrapcdn.com; "
+            "font-src 'self' data:;"
+        )
+        return response
 
     return app
 

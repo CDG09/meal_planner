@@ -1,11 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, Flask, flash, session
 from models import User
-from app import db
+from app import db, limiter
 
 auth = Blueprint('auth', __name__)
 
 # Registration
 @auth.route('/register', methods=['GET', 'POST'])
+@limiter.limit("3/minute")
 def register():
     if request.method == 'POST':
         username = request.form['username'].strip().lower()
@@ -34,14 +35,17 @@ def register():
 
 # Login
 @auth.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5/minute")
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username').strip().lower()
         password = request.form.get('password')
-
         user = User.query.filter_by(username=username).first()
+
         if user and user.check_password(password): # Verify hashed password
+            session.clear() # Clear any previous session data
             session['user_id'] = user.id
+            session.permanent = True
             flash('Welcome {}!'.format(user.username), 'success')
             return redirect(url_for('home'))
         else:
@@ -52,6 +56,6 @@ def login():
 # Logout
 @auth.route('/logout')
 def logout():
-    session.pop('user_id', None)
+    session.clear()
     flash('You have been logged out', 'success')
     return redirect(url_for('home'))

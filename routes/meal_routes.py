@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify
-from app import db
+from app import db, limiter
 from models import Meal, MealLog
 from datetime import datetime, date
 from utils.auth import login_required
@@ -101,6 +101,7 @@ def my_meals():
 
 @meal.route('/meal/<int:meal_id>/delete', methods=['POST'])
 @login_required
+@limiter.limit("5/minute")
 def delete_meal(meal_id):
     user_id = session.get('user_id')
 
@@ -132,6 +133,7 @@ def delete_meal(meal_id):
 
 @meal.route('/meal/<int:meal_id>/log', methods=['POST'])
 @login_required
+@limiter.limit("10/minute")
 def log_meal(meal_id):
     user_id = session.get('user_id')
 
@@ -187,6 +189,7 @@ def log_meal(meal_id):
 
 @meal.route('/meal/<int:meal_id>/unlog', methods=['POST'])
 @login_required
+@limiter.limit("10/minute")
 def unlog_meal(meal_id):
     user_id = session.get('user_id')
     today = date.today()
@@ -210,6 +213,7 @@ def unlog_meal(meal_id):
 
 @meal.route('/search_ingredient', methods=['GET'])
 @login_required
+@limiter.limit("30/minute")
 def search_ingredient():
     user_id = session.get('user_id')
     query = request.args.get('query','').strip()

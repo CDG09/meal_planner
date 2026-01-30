@@ -36,12 +36,14 @@
                 <!-- Toggle eaten -->
                 {% if meal.eaten_today %}
                     <form action="{{ url_for('meal.unlog_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-warning">
                             <i class ="fa fa-undo"></i> Unlog
                         </button>
                     </form>
                 {% else %}
                     <form action="{{ url_for('meal.log_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-primary">
                             <i class="fa fa-utensils"></i> Log
                         </button>
@@ -50,6 +52,7 @@
 
                 <!-- Delete meal -->
                 <form action="{{ url_for('meal.delete_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">
                         <i class="fa fa-trash"></i> Delete
                     </button>
