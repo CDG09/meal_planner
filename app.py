@@ -47,6 +47,10 @@ def create_app(test_config: dict | None = None):
     from routes.meal_routes import meal
     app.register_blueprint(meal)
 
+    # Progress routes
+    from routes.progress_routes import progress
+    app.register_blueprint(progress)
+
     # Dashboard routes
     from routes.dashboard_routes import dashboard
     app.register_blueprint(dashboard)

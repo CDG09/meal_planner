@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Progress Tracking</h2>
+
+    <form method="GET" action="{{ url_for('progress.view_progress') }}" class="d-flex gap-2">
+      <select name="days" class="form-select form-select-sm" style="width: 140px;">
+        {% for n in [7, 14, 30] %}
+          <option value="{{ n }}" {% if data.days == n %}selected{% endif %}>Last {{ n }} days</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm btn-primary" type="submit">Apply</button>
+    </form>
+  </div>
+
+  {% if data.error %}
+    <div class="alert alert-warning">
+      You don’t have a nutrition goal yet. Set one first to see progress history.
+    </div>
+    <a class="btn btn-secondary" href="{{ url_for('goals.view_goals') }}">Go to Goals</a>
+  {% else %}
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between flex-wrap gap-3">
+          <div>
+            <div class="text-muted small">Date range</div>
+            <div><strong>{{ data.start }}</strong> → <strong>{{ data.end }}</strong></div>
+          </div>
+
+          <div>
+            <div class="text-muted small">Goal type</div>
+            <div><strong>{{ data.goal_category|capitalize }}</strong></div>
+          </div>
+
+          <div>
+            <div class="text-muted small">On-track days</div>
+            <div><strong>{{ data.summary.on_track_days }}/{{ data.summary.total_days }}</strong></div>
+          </div>
+
+          <div>
+            <div class="text-muted small">Avg calories</div>
+            <div><strong>{{ data.summary.avg_calorie_percent }}%</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ✅ NEW: handle "no logs in range" cleanly #}
+    {% if data.history|length == 0 %}
+      <div class="alert alert-info">
+        No meals logged in the selected period. Log a meal to see progress history.
+      </div>
+      <a class="btn btn-secondary" href="{{ url_for('meal.my_meals') }}">Go to My Meals</a>
+    {% else %}
+
+      <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Calories</th>
+              <th>Protein</th>
+              <th>Fat</th>
+              <th>Carbs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for day in data.history|reverse %}
+            <tr>
+              <td><strong>{{ day.date }}</strong></td>
+
+              <td>
+                {% if day.status.on_track %}
+                  <span class="badge bg-success">{{ day.status.label }}</span>
+                {% else %}
+                  <span class="badge bg-danger">{{ day.status.label }}</span>
+                {% endif %}
+                <div class="text-muted small">{{ day.status.rule }}</div>
+              </td>
+
+              <td>
+                {{ day.consumed.calories }} / {{ day.target.calories }}
+                <div class="text-muted small">{{ day.percent.calories }}%</div>
+              </td>
+
+              <td>
+                {{ day.consumed.protein }} / {{ day.target.protein }}
+                <div class="text-muted small">{{ day.percent.protein }}%</div>
+              </td>
+
+              <td>
+                {{ day.consumed.fat }} / {{ day.target.fat }}
+                <div class="text-muted small">{{ day.percent.fat }}%</div>
+              </td>
+
+              <td>
+                {{ day.consumed.carbs }} / {{ day.target.carbs }}
+                <div class="text-muted small">{{ day.percent.carbs }}%</div>
+              </td>
+            </tr>
+
+            <tr class="table-light">
+              <td class="text-muted small">Remaining</td>
+              <td></td>
+              <td class="text-muted small">{{ day.remaining.calories }}</td>
+              <td class="text-muted small">{{ day.remaining.protein }}</td>
+              <td class="text-muted small">{{ day.remaining.fat }}</td>
+              <td class="text-muted small">{{ day.remaining.carbs }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

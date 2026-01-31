@@ -5,6 +5,7 @@ from utils.ingredients import get_all_ingredients, create_ingredient, get_ingred
 from utils.audit import _get_audit_collection
 from pymongo import DESCENDING
 from services.goals_service import get_or_create_daily_goal
+from services.progress_service import get_progress_history
 from models import Meal, MealLog
 from app import db, csrf, limiter
 
@@ -278,3 +279,22 @@ def api_get_audit_logs():
         })
 
     return jsonify(out), 200
+
+from services.progress_service import get_progress_history
+
+@api.get("/progress")
+@login_required
+def api_progress():
+    user_id = session.get("user_id")
+
+    try:
+        days = int(request.args.get("days", 14))
+    except ValueError:
+        days = 14
+
+    data = get_progress_history(user_id, days=days)
+
+    if "error" in data:
+        return jsonify({"error": "No nutrition goal found. Create one first."}), 404
+
+    return jsonify(data), 200
