@@ -81,13 +81,6 @@ def create_app(test_config: dict | None = None):
         # Introduce a strict Referrer policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         # Content security policy
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline' https://stackpath.bootstrapcdn.com; "
-            "script-src 'self' https://stackpath.bootstrapcdn.com; "
-            "font-src 'self' data:;"
-        )
         return response
 
     return app

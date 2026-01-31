@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, Flask, flash, session
 from models import User
 from app import db, limiter
+from utils.audit import log_event
 
 auth = Blueprint('auth', __name__)
 
@@ -45,11 +46,13 @@ def login():
         if user and user.check_password(password): # Verify hashed password
             session.clear() # Clear any previous session data
             session['user_id'] = user.id
+            log_event(event="LOGIN_SUCCESS", user_id=user.id, request=request, meta={"username": username})
             session.permanent = True
             flash('Welcome {}!'.format(user.username), 'success')
             return redirect(url_for('home'))
         else:
             flash('Invalid username or password.', 'danger')
+            log_event(event="LOGIN_FAILED", user_id=None, request=request, meta={"username": username})
             return redirect(url_for('auth.login'))
     return render_template('login.html', active_page='login')
 
@@ -58,4 +61,5 @@ def login():
 def logout():
     session.clear()
     flash('You have been logged out', 'success')
+    log_event(event="LOGOUT", user_id=session.get("user_id"), request=request)
     return redirect(url_for('home'))

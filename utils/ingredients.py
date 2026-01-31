@@ -52,7 +52,7 @@ def get_all_ingredients(user_id):
     return list(collection.find({"user_id": int(user_id)}))
 
 # Insert a FatSecret ingredient into MongoDB if it doesn't exist
-def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, user_id):
+def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, user_id,metric_serving_amount=None, serving_amount_unit=None, serving_grams=None):
     collection = ingredient_collection()
     selector = {
         "user_id": int(user_id),
@@ -61,6 +61,18 @@ def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, us
 
     }
 
+    try:
+        metric_serving_amount = float(metric_serving_amount) if metric_serving_amount is not None else None
+    except (TypeError, ValueError):
+        metric_serving_amount = None
+
+    serving_amount_unit = (serving_amount_unit or "g").lower().strip()
+
+    try:
+        serving_grams = float(serving_grams) if serving_grams is not None else None
+    except (TypeError, ValueError):
+        serving_grams = None
+
     update_doc = {
         "$set": {
             "name": name,
@@ -68,6 +80,9 @@ def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, us
             "protein": float(protein),
             "fat": float(fat),
             "carbs": float(carbs),
+            "metric_serving_amount": metric_serving_amount,
+            "serving_amount_unit": serving_amount_unit,
+            "serving_grams": serving_grams,
             "source": "fatsecret",
             "source_id": str(food_id),
             "user_id": int(user_id)
@@ -98,3 +113,35 @@ def calculate_macros_from_ingredients(ingredients):
         totals["carbs"] += float(ingredient.get("carbs", 0) or 0)
 
     return totals
+
+def calculate_macros_from_portions(ingredient_docs, portions):
+    totals = {"calories": 0.0, "protein": 0.0, "fat": 0.0, "carbs": 0.0}
+
+    grams_map = {}
+    for p in portions or []:
+        ing_id = str(p.get("ingredient_id"))
+        try:
+            grams_used = float(p.get("grams_used", 0))
+        except (TypeError, ValueError):
+            grams_used = 0.0
+        grams_map[ing_id] = max(grams_used, 0.0)
+
+    for ing in ingredient_docs:
+        ing_id = str(ing.get("_id"))
+        grams_used = grams_map.get(ing_id, 0.0)
+
+
+        try:
+            serving_grams = float(ing.get("serving_grams", 100) or 100)
+        except (TypeError, ValueError):
+            serving_grams = 100.0
+
+        multiplier = (grams_used / serving_grams) if serving_grams > 0 else 0.0
+
+        totals["calories"] += float(ing.get("calories", 0) or 0) * multiplier
+        totals["protein"] += float(ing.get("protein", 0) or 0) * multiplier
+        totals["fat"] += float(ing.get("fat", 0) or 0) * multiplier
+        totals["carbs"] += float(ing.get("carbs", 0) or 0) * multiplier
+
+    return totals
+

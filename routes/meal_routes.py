@@ -6,6 +6,7 @@ from utils.auth import login_required
 from utils.goals import get_daily_goal
 from utils.ingredients import get_ingredient_by_id, calculate_macros_from_ingredients, get_all_ingredients, insert_fatsecret_ingredient
 from utils import fatsecret
+from utils.audit import log_event
 import json
 meal = Blueprint('meal', __name__)
 
@@ -23,13 +24,28 @@ def add_meal():
         ingredients_ids_raw = request.form.get('ingredient_ids', '').strip()
         ingredient_ids = [i for i in ingredients_ids_raw.split(',') if i]
 
+        portions_raw = request.form.get('ingredients_portions', '').strip()
+        portions = []
+        if portions_raw:
+            try:
+                portions = json.loads(portions_raw)
+            except json.JSONDecodeError:
+                portions = []
+
         # If ingredients selected, calculate macros from MongoDB
         if ingredient_ids:
             # Fetch existing ingredients from MongoDB
             ingredient_docs = get_ingredient_by_id(ingredient_ids, user_id)
 
+            # Use grams-based scaling if portions were supplied
+            if portions:
+                from utils.ingredients import calculate_macros_from_portions
+                macros = calculate_macros_from_portions(ingredient_docs, portions)
+            else:
+                # Backwards-compatible: treat as "1 serving each"
+                macros = calculate_macros_from_ingredients(ingredient_docs)
+
             # Calculate macros from all selected ingredients
-            macros = calculate_macros_from_ingredients(ingredient_docs)
             calories = macros['calories']
             protein = macros['protein']
             fat = macros['fat']
@@ -37,6 +53,7 @@ def add_meal():
 
             # Store MongoDB ingredient IDs in SQL Meal
             ingredient_ids_list = [str(ing["_id"]) for ing in ingredient_docs]
+            ingredients_portions_to_store = portions if portions else None
 
         # If no ingredients selected, use manual macros
         else:
@@ -49,6 +66,7 @@ def add_meal():
                 flash('Please enter numeric values!', 'danger')
                 return redirect(url_for('meal.add_meal'))
             ingredient_ids_list = None
+            ingredients_portions_to_store = None
 
         # Create SQL meal record
         new_meal = Meal(
@@ -59,11 +77,13 @@ def add_meal():
             fat=fat,
             carbs=carbs,
             ingredients_ids=ingredient_ids_list,
+            ingredients_portions=ingredients_portions_to_store,
             user_id=user_id
         )
         db.session.add(new_meal)
         db.session.commit()
         flash('Your meal has been added!', 'success')
+        log_event(event="MEAL_CREATED", user_id=user_id, request=request, meta={"meal_id": new_meal.id, "name": name, "has_portions": bool(ingredients_portions_to_store)})
         return redirect(url_for('meal.my_meals'))
 
     return render_template('add_meal.html', ingredients=ingredients)
@@ -129,6 +149,7 @@ def delete_meal(meal_id):
     db.session.delete(meal_delete)
     db.session.commit()
     flash('You have successfully deleted this meal and updated today\'s goal', 'success')
+    log_event(event="MEAL_DELETED", user_id=user_id, request=request, meta={"meal_id": meal_id})
     return redirect(url_for('meal.my_meals'))
 
 @meal.route('/meal/<int:meal_id>/log', methods=['POST'])
@@ -185,6 +206,7 @@ def log_meal(meal_id):
 
     db.session.commit()
     flash('Meal logged for today', 'success')
+    log_event(event="MEAL_LOGGED", user_id=user_id, request=request, meta={"meal_id": meal_id, "date": str(today)})
     return redirect(url_for('meal.my_meals'))
 
 @meal.route('/meal/<int:meal_id>/unlog', methods=['POST'])
@@ -209,6 +231,7 @@ def unlog_meal(meal_id):
     db.session.delete(log)
     db.session.commit()
     flash('You have successfully unlogged this meal for today', 'success')
+    log_event(event="MEAL_UNLOGGED", user_id=user_id, request=request, meta={"meal_id": meal_id, "date": str(today)})
     return redirect(url_for('meal.my_meals'))
 
 @meal.route('/search_ingredient', methods=['GET'])
@@ -239,6 +262,9 @@ def search_ingredient():
                 protein=details.get("protein", 0),
                 fat=details.get("fat", 0),
                 carbs=details.get("carbs", 0),
+                metric_serving_amount=details.get("metric_serving_amount"),
+                serving_amount_unit=details.get("serving_amount_unit"),
+                serving_grams=details.get("serving_grams"),
                 user_id=user_id,
             )
 
@@ -249,11 +275,16 @@ def search_ingredient():
                 "protein": details.get("protein", 0),
                 "fat": details.get("fat", 0),
                 "carbs": details.get("carbs", 0),
+                "serving_grams": details.get("serving_grams")
             })
 
     except Exception as e:
         print("FatSecret search error:", e)
         return jsonify(results=[])
 
+    log_event(event="INGREDIENT_SEARCH", user_id=user_id, request=request,
+              meta={"query": query, "results": len(results)})
     return jsonify(results=results)
+
+
 

@@ -29,7 +29,8 @@ class Meal(db.Model):
     description = db.Column(db.String(255)) # Meal description
     added_at = db.Column(db.DateTime, default=db.func.current_timestamp()) # Time meal is stored in the app
     meal_type = db.Column(db.String(20)) # Breakfast, Lunch, Dinner
-    ingredients_ids = db.Column(JSON, nullable=True)
+    ingredients_ids = db.Column(db.JSON, nullable=True)
+    ingredients_portions = db.Column(db.JSON, nullable=True)
 
     # Nutritional info
     calories = db.Column(db.Float, default=0.0)

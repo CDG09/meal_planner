@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, session, request, current_app
 from datetime import date
 from utils.auth import login_required
 from utils.ingredients import get_all_ingredients, create_ingredient, get_ingredient_by_id, calculate_macros_from_ingredients
+from utils.audit import _get_audit_collection
+from pymongo import DESCENDING
 from services.goals_service import get_or_create_daily_goal
 from models import Meal, MealLog
 from app import db, csrf, limiter
@@ -247,3 +249,32 @@ def api_create_meal():
     db.session.commit()
 
     return jsonify({"id": meal.id, "name": meal.name}), 201
+
+# Audit endpoints
+@api.get("/audit")
+@login_required
+def api_get_audit_logs():
+    user_id = session.get("user_id")
+    limit = request.args.get("limit", "50")
+    try:
+        limit = min(max(int(limit), 1), 200)
+    except ValueError:
+        limit = 50
+
+    col = _get_audit_collection()
+
+    cursor = col.find({"user_id": user_id}).sort("created_at", DESCENDING).limit(limit)
+
+    out = []
+    for doc in cursor:
+        out.append({
+            "id": str(doc.get("_id")),
+            "event": doc.get("event"),
+            "user_id": doc.get("user_id"),
+            "meta": doc.get("meta", {}),
+            "ip": doc.get("ip"),
+            "user_agent": doc.get("user_agent"),
+            "created_at": doc.get("created_at"),
+        })
+
+    return jsonify(out), 200

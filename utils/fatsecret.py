@@ -30,6 +30,29 @@ def oauth():
         signature_method='HMAC-SHA1',
     )
 
+def convert_to_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+def _serving_to_grams(metric_amount, unit):
+    if metric_amount is None:
+        return None
+
+    unit = (unit or "g").lower().strip()
+
+    if unit == "g":
+        return metric_amount
+    if unit == "oz":
+        return metric_amount * 28
+    if unit == "ml":
+        return metric_amount
+    else:
+        return None
+
+
+
 # API Calls
 def search_foods(query, max_results=10, page=0):
     params = {
@@ -76,17 +99,34 @@ def get_food_by_id(food_id):
     response.raise_for_status()
 
     food = response.json().get("food", {})
-    nutrients = food.get("servings", {}).get("serving", [])
-    if isinstance(nutrients, list):
-        if nutrients:
-            nutrients = nutrients[0]
-        else:
-            nutrients = {}
+    serving = food.get("servings", {}).get("serving", [])
+    if isinstance(serving, list):
+        serving = serving[0] if serving else {}
+    if not isinstance(serving, dict):
+        serving = {}
+
+    # Macros returned from Fatsecret
+    calories = convert_to_float(serving.get("calories")) or 0.0
+    protein = convert_to_float(serving.get("protein")) or 0.0
+    fat = convert_to_float(serving.get("fat")) or 0.0
+    carbs = convert_to_float(serving.get("carbohydrate")) or 0.0
+
+    # Metric serving size
+    metric_amount = convert_to_float(serving.get("metric_amount"))
+    metric_unit = (serving.get("serving_amount_unit") or "g").lower().strip()
+    serving_grams = _serving_to_grams(metric_amount, metric_unit)
+    serving_ml = metric_amount if metric_unit == "ml" else None
+
+
     return {
         "name": food.get("food_name"),
-        "calories": float(nutrients.get("calories", 0)),
-        "protein": float(nutrients.get("protein", 0)),
-        "fat": float(nutrients.get("fat", 0)),
-        "carbs": float(nutrients.get("carbohydrate", 0)),
+        "calories": float(calories),
+        "protein": float(protein),
+        "fat": float(fat),
+        "carbs": float(carbs),
+        "metric_serving_amount": metric_amount,
+        "serving_amount_unit": metric_unit,
+        "serving_grams": serving_grams,
+        "serving_ml": serving_ml,
         "source": "fatsecret"
     }

@@ -11,11 +11,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let selectedIngredients = [];
     let selectedIngredientData = {};
+    let selectedIngredientGrams = {};
     let debounceTimer = null;
 
     // Sync selected ingredient IDs and full data to hidden inputs
     function updateHiddenInputs() {
         hiddenInput.value = selectedIngredients.join(',');
+        const portions = selectedIngredients.map(id => ({ingredient_id: id, grams_used: Number(selectedIngredientGrams[id] ?? 100)}));
+        hiddenPortionsInput.value = JSON.stringify(portions);
     }
 
     function toggleMacroInputs(disabled) {
@@ -28,11 +31,18 @@ document.addEventListener("DOMContentLoaded", () => {
     function recalculateMacros() {
         let calories = 0, protein = 0, fat = 0, carbs = 0;
 
-        Object.values(selectedIngredientData).forEach(food => {
-            calories += food.calories || 0;
-            protein += food.protein || 0;
-            fat += food.fat || 0;
-            carbs += food.carbs || 0;
+        selectedIngredients.forEach(id => {
+            const food = selectedIngredientData[id];
+            if (!food) return;
+
+            const gramsUsed = Number(selectedIngredientGrams[id] ?? 100);
+            const servingGrams = Number(food.serving_grams ?? 100);
+            const multiplier = servingGrams > 0 ? (gramsUsed / servingGrams): 1;
+
+            calories += (food.calories || 0) * multiplier;
+            protein += (food.protein || 0) * multiplier;
+            fat += (food.fat || 0) * multiplier;
+            carbs += (food.carbs || 0) * multiplier;
         });
 
         caloriesInput.value = calories.toFixed(0);
@@ -63,8 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const li = document.createElement("li");
             li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
 
-            const textWrap = document.createElement("div");
-            textWrap.classList.add("me-3");
+            const left = document.createElement("div");
+            left.classList.add("me-2", "flex-grow-1");
 
             const name = document.createElement("div");
             name.innerHTML = `<strong>${food.name}</strong>`;
@@ -73,8 +83,39 @@ document.addEventListener("DOMContentLoaded", () => {
             macros.classList.add("text-muted", "small");
             macros.textContent = `Calories: ${food.calories} | P ${food.protein} | F ${food.fat} | C ${food.carbs}`;
 
-            textWrap.appendChild(name);
-            textWrap.appendChild(macros);
+            left.appendChild(name);
+            left.appendChild(macros);
+
+            const gramsWrap = document.createElement("div");
+            gramsWrap.classList.add("d-flex", "align-items-center", "gap-2");
+
+            const gramsLabel = document.createElement("span");
+            gramsLabel.classList.add("text-muted", "small");
+            gramsLabel.textContent = "Grams";
+
+            const gramsInput = document.createElement("input");
+            gramsInput.type = "number";
+            gramsInput.min = "1";
+            gramsInput.step = "1";
+            gramsInput.classList.add("form-control", "form-control-sm");
+            gramsInput.style.width = "90px";
+
+            if (selectedIngredientGrams[id] == null) {
+                const defaultServing = Number(food.serving_grams ?? 100);
+                selectedIngredientGrams[id] = defaultServing > 0 ? defaultServing : 100;
+            }
+            gramsInput.value = String(selectedIngredientGrams[id]);
+
+            gramsInput.addEventListener("input", () => {
+                const v = Number(gramsInput.value);
+                selectedIngredientGrams[id] = Number.isFinite(v) && v > 0 ? v : 100;
+
+                recalculateMacros();
+                updateHiddenInputs();
+            });
+
+            gramsWrap.appendChild(gramsLabel);
+            gramsWrap.appendChild(gramsInput);
 
             const btn = document.createElement("button");
             btn.classList.add("btn", "btn-sm", "btn-outline-danger");
@@ -83,16 +124,19 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.addEventListener("click", () => {
                 selectedIngredients = selectedIngredients.filter(i => i !== id);
                 delete selectedIngredientData[id];
+                delete selectedIngredientGrams[id];
 
                 renderSelectedIngredients();
                 recalculateMacros();
                 updateHiddenInputs();
             });
 
-            li.appendChild(textWrap);
+            li.appendChild(left);
+            li.appendChild(gramsWrap)
             li.appendChild(btn);
             selectedList.appendChild(li);
         });
+        updateHiddenInputs();
     }
 
     function renderResults(foods) {
@@ -131,6 +175,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.addEventListener("click", () => {
                     selectedIngredients.push(id);
                     selectedIngredientData[id] = food;
+
+                    const defaultServing = Number(food.serving_grams ?? 100);
+                    selectedIngredientGrams[id] = defaultServing > 0 ? defaultServing : 100;
 
                     renderSelectedIngredients();
                     recalculateMacros();
