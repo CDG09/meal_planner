@@ -4,36 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a7f5f7b-d46b-4037-be8d-69e48be96429" name="Changes" comment="Added progress tracking">
-      <change afterPath="$PROJECT_DIR$/static/js/api.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/js/goals.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/js/meals.js" afterDir="false" />
+    <list default="true" id="2a7f5f7b-d46b-4037-be8d-69e48be96429" name="Changes" comment="General structure updates">
+      <change afterPath="$PROJECT_DIR$/app.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/api_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/api_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes/auth_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/routes/auth_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes/goals_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/routes/goals_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes/meal_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/routes/meal_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/progress_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/progress_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/js/add_meal.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/js/add_meal.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/add_goal.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/add_goal.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/add_meal.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/add_meal.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/edit_goal.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/edit_goal.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/goals.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/goals.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/my_meals.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/my_meals.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/progress.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/progress.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_auth.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_services.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_services.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/audit.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/audit.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/auth.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/fatsecret.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/fatsecret.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/goals.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/goals.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/ingredients.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/ingredients.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/mongo.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/mongo.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/nutrition.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/nutrition.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,8 +23,8 @@
         <option value="Flask Main" />
         <option value="CSS File" />
         <option value="JavaScript File" />
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -194,7 +168,7 @@
       <workItem from="1769864540982" duration="9749000" />
       <workItem from="1769878623779" duration="8536000" />
       <workItem from="1770033088378" duration="20354000" />
-      <workItem from="1770064885380" duration="6040000" />
+      <workItem from="1770064885380" duration="7612000" />
     </task>
     <task id="LOCAL-00001" summary="Skeleton for the program is created including initial templates.">
       <option name="closed" value="true" />
@@ -308,7 +282,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769874106979</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="General structure updates">
+      <option name="closed" value="true" />
+      <created>1770073921120</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1770073921120</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -340,7 +322,8 @@
     <MESSAGE value="General modifications" />
     <MESSAGE value="Added logging and portions to meal" />
     <MESSAGE value="Added progress tracking" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added progress tracking" />
+    <MESSAGE value="General structure updates" />
+    <option name="LAST_COMMIT_MESSAGE" value="General structure updates" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

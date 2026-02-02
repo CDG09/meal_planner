@@ -1,0 +1,11 @@
+Flask
+Flask-SQLAlchemy
+gunicorn
+pymongo
+dnspython
+Flask-WTF
+Flask-Limiter
+passlib
+requests
+requests-oauthlib
+python-dotenv
