@@ -8,7 +8,7 @@ from services.goals_service import get_or_create_daily_goal
 
 class TestGoalsService(unittest.TestCase):
     def setUp(self):
-        self.app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "SQLALCHEMY_TRACK_MODIFICATIONS": False, "SECRET_KEY": "test-secret",})
+        self.app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "SQLALCHEMY_TRACK_MODIFICATIONS": False, "SECRET_KEY": "test-secret","AUTO_CREATE_TABLES": False,})
         self.ctx = self.app.app_context()
         self.ctx.push()
         db.create_all()

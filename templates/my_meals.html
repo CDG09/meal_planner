@@ -24,7 +24,7 @@
                     <br>
                     <small class="text-muted">
                         Ingredients:
-                        {{ meal.ingredients_names | join(', ') }}
+                        {{ meal.ingredient_names | join(', ') }}
                     </small>
                 {% endif %}
             </td>
@@ -35,28 +35,19 @@
             <td>
                 <!-- Toggle eaten -->
                 {% if meal.eaten_today %}
-                    <form action="{{ url_for('meal.unlog_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm btn-warning">
-                            <i class ="fa fa-undo"></i> Unlog
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="unlogMeal({{ meal.id }})">
+                        <i class="fa fa-undo"></i> Unlog
+                    </button>
                 {% else %}
-                    <form action="{{ url_for('meal.log_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="fa fa-utensils"></i> Log
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="logMeal({{ meal.id }})">
+                        <i class="fa fa-utensils"></i> Log
+                    </button>
                 {% endif %}
 
                 <!-- Delete meal -->
-                <form action="{{ url_for('meal.delete_meal', meal_id=meal.id) }}" method="POST" style="display:inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">
-                        <i class="fa fa-trash"></i> Delete
-                    </button>
-                </form>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteMeal({{ meal.id }})">
+                    <i class="fa fa-trash"></i> Delete
+                </button>
             </td>
         </tr>
         {% endfor %}
@@ -76,4 +67,6 @@
 {% else %}
 <p>No meals logged yet.</p>
 {% endif %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/meals.js') }}"></script>
 {% endblock %}

@@ -1,18 +1,12 @@
-# Handles ingredient storage and retrieval using MongoDB
-from pymongo import MongoClient
+# Handles ingredients operations (storing & retrieving from MongoDB)
 from bson.objectid import ObjectId
-from flask import current_app
+from utils.mongo import get_collection
 
-# MongoDB Connection
-def mongo_connect():
-    return MongoClient(current_app.config['MONGO_URI'])
-
+# Return the ingredient collection from the db
 def ingredient_collection():
-    client = mongo_connect()
-    mongo_db = client['mealplanner']
-    return mongo_db['ingredients']
+    return get_collection("ingredients")
 
-# Ingredient Operations
+# Add ingredient based on manual inputs
 def create_ingredient(name, calories, protein, fat, carbs, user_id, source="manual"):
     ingredient = {
         "name": name,
@@ -28,52 +22,59 @@ def create_ingredient(name, calories, protein, fat, carbs, user_id, source="manu
     result = collection.insert_one(ingredient)
     return result.inserted_id
 
-# Fetch manual ingredients by MongoDB ObjectId
-def get_ingredient_by_id(ingredient_ids, user_id):
-    object_ids = []
-    for i in ingredient_ids:
+# Fetch ingredients based on MongoDB ObjectId
+def get_ingredient_by_ids(ingredient_ids, user_id):
+    valid_ids = []
+    for _id in ingredient_ids:
         try:
-            object_ids.append(ObjectId(i))
+            valid_ids.append(ObjectId(_id))
         except Exception:
+            # Skip any invalid ids
             continue
 
-    if not object_ids:
+    if not valid_ids:
         return []
 
-    collection = ingredient_collection()
-    return list(collection.find({
-        "_id": {"$in": object_ids},
+    ingredients = ingredient_collection()
+    query = {
+        "_id": {"$in": valid_ids},
         "user_id": int(user_id)
-    }))
+    }
 
-# Fetch all ingredients for a user
+    return list(ingredients.find(query))
+
+# Return all ingredients belonging to a user
 def get_all_ingredients(user_id):
-    collection = ingredient_collection()
-    return list(collection.find({"user_id": int(user_id)}))
+    return list(ingredient_collection().find({"user_id": int(user_id)}))
 
-# Insert a FatSecret ingredient into MongoDB if it doesn't exist
-def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, user_id,metric_serving_amount=None, serving_amount_unit=None, serving_grams=None):
-    collection = ingredient_collection()
-    selector = {
+# Insert an ingredient sourced from the fatsecret API
+def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, user_id, metric_serving_amount=None, serving_amount_unit=None, serving_grams=None):
+    ingredients = ingredient_collection()
+
+    # Used to identify individual ingredients which belong to users
+    identifier = {
         "user_id": int(user_id),
         "source": "fatsecret",
         "source_id": str(food_id)
-
     }
 
+    # Cleanup values
     try:
-        metric_serving_amount = float(metric_serving_amount) if metric_serving_amount is not None else None
+        metric_serving_amount = float(metric_serving_amount)
     except (TypeError, ValueError):
         metric_serving_amount = None
 
-    serving_amount_unit = (serving_amount_unit or "g").lower().strip()
+    if not serving_amount_unit:
+        serving_amount_unit = "g"
+    serving_amount_unit = serving_amount_unit.lower().strip()
 
     try:
-        serving_grams = float(serving_grams) if serving_grams is not None else None
+        serving_grams = float(serving_grams)
     except (TypeError, ValueError):
         serving_grams = None
 
-    update_doc = {
+    # Insert or update fields in db
+    update_data = {
         "$set": {
             "name": name,
             "calories": float(calories),
@@ -89,16 +90,34 @@ def insert_fatsecret_ingredient(food_id, name, calories, protein, fat, carbs, us
         }
     }
 
-    result = collection.update_one(selector, update_doc, upsert=True)
+    outcome = ingredients.update_one(identifier, update_data, upsert=True)
 
-    if result.upserted_id is not None:
-        return result.upserted_id
+    # return the new _id if ingredient is inserted
+    if outcome.upserted_id:
+        return outcome.upserted_id
 
-    existing = collection.find_one(selector, {"_id": 1})
+    existing = ingredients.find_one(identifier, {"_id": 1})
     return existing["_id"]
 
-# Calculation Logic
+# Calculates macros from ingredients presuming one serving
 def calculate_macros_from_ingredients(ingredients):
+    macro_totals = {
+        "calories": 0.0,
+        "protein": 0.0,
+        "fat": 0.0,
+        "carbs": 0.0
+    }
+
+    for ing in ingredients:
+        macro_totals["calories"] += float(ing.get("calories", 0) or 0)
+        macro_totals["protein"] += float(ing.get("protein", 0) or 0)
+        macro_totals["fat"] += float(ing.get("fat", 0) or 0)
+        macro_totals["carbs"] += float(ing.get("carbs", 0) or 0)
+
+    return macro_totals
+
+# Calculate macros from ingredients where a portion size is specified
+def calculate_macros_from_portions(ingredient_docs, portions):
     totals = {
         "calories": 0.0,
         "protein": 0.0,
@@ -106,42 +125,34 @@ def calculate_macros_from_ingredients(ingredients):
         "carbs": 0.0
     }
 
-    for ingredient in ingredients:
-        totals["calories"] += float(ingredient.get("calories", 0) or 0)
-        totals["protein"] += float(ingredient.get("protein", 0) or 0)
-        totals["fat"] += float(ingredient.get("fat", 0) or 0)
-        totals["carbs"] += float(ingredient.get("carbs", 0) or 0)
+    grams_lookup = {}
+
+    for portion in portions or []:
+        try:
+            ing_id = str(portion.get("ingredient_id"))
+            grams_value = float(portion.get("grams_used", 0))
+        except (TypeError, ValueError):
+            grams_value = 0.0
+        # Ensures grams is never negative
+        grams_lookup[ing_id] = max(0.0, grams_value)
+
+    for ingredient in ingredient_docs:
+        ing_id = str(ingredient.get("_id"))
+        grams_used = grams_lookup.get(ing_id, 0.0)
+
+        # If portion isn't provided default to 100g
+        try:
+            serving_size = float(ingredient.get("serving_grams", 100) or 100)
+        except (TypeError, ValueError):
+            serving_size = 100.0
+
+        # Avoid bad data (0 division)
+        multiplier = grams_used / serving_size if serving_size > 0 else 0.0
+
+        # Scale each macro by how much was used
+        totals["calories"] += float(ingredient.get("calories", 0) or 0) * multiplier
+        totals["protein"] += float(ingredient.get("protein", 0) or 0) * multiplier
+        totals["fat"] += float(ingredient.get("fat", 0) or 0) * multiplier
+        totals["carbs"] += float(ingredient.get("carbs", 0) or 0) * multiplier
 
     return totals
-
-def calculate_macros_from_portions(ingredient_docs, portions):
-    totals = {"calories": 0.0, "protein": 0.0, "fat": 0.0, "carbs": 0.0}
-
-    grams_map = {}
-    for p in portions or []:
-        ing_id = str(p.get("ingredient_id"))
-        try:
-            grams_used = float(p.get("grams_used", 0))
-        except (TypeError, ValueError):
-            grams_used = 0.0
-        grams_map[ing_id] = max(grams_used, 0.0)
-
-    for ing in ingredient_docs:
-        ing_id = str(ing.get("_id"))
-        grams_used = grams_map.get(ing_id, 0.0)
-
-
-        try:
-            serving_grams = float(ing.get("serving_grams", 100) or 100)
-        except (TypeError, ValueError):
-            serving_grams = 100.0
-
-        multiplier = (grams_used / serving_grams) if serving_grams > 0 else 0.0
-
-        totals["calories"] += float(ing.get("calories", 0) or 0) * multiplier
-        totals["protein"] += float(ing.get("protein", 0) or 0) * multiplier
-        totals["fat"] += float(ing.get("fat", 0) or 0) * multiplier
-        totals["carbs"] += float(ing.get("carbs", 0) or 0) * multiplier
-
-    return totals
-

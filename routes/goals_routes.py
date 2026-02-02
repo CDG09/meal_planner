@@ -1,8 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request, session, flash
-from app import db
+from flask import Blueprint, render_template, redirect, url_for, session, flash
 from models import NutritionGoal
-from datetime import datetime
-
 from utils.auth import login_required
 
 goals = Blueprint('goals', __name__)
@@ -11,142 +8,33 @@ goals = Blueprint('goals', __name__)
 @login_required
 def view_goals():
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in to view your goals.', 'warning')
-        return redirect(url_for('auth.login'))
-
     user_goals = NutritionGoal.query.filter_by(user_id=user_id).order_by(NutritionGoal.created_at.desc()).all()
     return render_template('goals.html', goals=user_goals)
 
 
-@goals.route('/goals/new', methods=['GET', 'POST'])
+@goals.route('/goals/new', methods=['GET'])
 @login_required
 def new_goal():
-    """Create a new goal"""
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in to create a goal.', 'warning')
-        return redirect(url_for('auth.login'))
-
-    if request.method == 'POST':
-        try:
-            goal = NutritionGoal(
-                user_id=user_id,
-                weight_kg=float(request.form['weight']),
-                height_cm=float(request.form['height']),
-                age=int(request.form['age']),
-                sex=request.form['sex'],
-                activity_level=request.form['activity_level'],
-                goal_percent=float(request.form['goal_percent']),
-                created_at=datetime.now()
-            )
-        except (ValueError,KeyError):
-            flash('Please provide valid values for all fields.', 'warning')
-            return redirect(url_for('goals.new_goal'))
-
-        goal.calculate_goal()
-        db.session.add(goal)
-        db.session.commit()
-
-        flash('You have successfully created a new goal.', 'success')
-        return redirect(url_for('goals.view_goals'))
-
-    return render_template('add_goal.html')
+    return render_template("add_goal.html")
 
 
-@goals.route('/goals/<int:goal_id>/edit', methods=['GET', 'POST'])
+@goals.route('/goals/<int:goal_id>/edit', methods=['GET'])
 @login_required
 def edit_goal(goal_id):
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in to edit your goals.', 'warning')
-        return redirect(url_for('auth.login'))
 
     # Load the original goal for pre-filling the form
-    original_goal = NutritionGoal.query.get_or_404(goal_id)
-    if original_goal.user_id != user_id: # IDOR check
+    goal = NutritionGoal.query.get_or_404(goal_id)
+    if goal.user_id != user_id: # IDOR check
         flash('You cannot edit this goal.', 'danger')
         return redirect(url_for('goals.view_goals'))
 
-    if request.method == 'POST':
-        # Wrap input parsing in try/except
-        try:
-            weight = float(request.form['weight'])
-            height = float(request.form['height'])
-            age = int(request.form['age'])
-            goal_percent = float(request.form['goal_percent'])
-        except (ValueError, KeyError):
-            flash('Please provide valid values for all fields.', 'warning')
-            return redirect(url_for('goals.edit_goal', goal_id=goal_id))
 
-        if weight != original_goal.weight_kg or height != original_goal.height_cm or age != original_goal.age:
-            # Create a new snapshot instead of overwriting
-            new_snapshot = NutritionGoal(
-                user_id=user_id,
-                weight_kg=weight,
-                height_cm=height,
-                age=age,
-                sex=original_goal.sex,  # keep the original sex
-                activity_level=original_goal.activity_level,
-                goal_percent=goal_percent,
-                created_at=datetime.now()
-            )
-            new_snapshot.calculate_goal()
+    return render_template('edit_goal.html', goal=goal)
 
-            db.session.add(new_snapshot)
-            db.session.commit()
-            flash('Your goal has been updated.')
-        # Only goal_percent being changed means the current snapshot is adjusted instead
-        elif goal_percent != original_goal.goal_percent:
-            original_goal.goal_percent = goal_percent
-            original_goal.calculate_goal()
-            db.session.commit()
-            flash('Your goal has been updated.', 'success')
-        else:
-            flash('No changes have been made.')
 
-        return redirect(url_for('goals.view_goals'))
 
-    # GET request: show the edit form prefilled with original values
-    return render_template('edit_goal.html', goal=original_goal)
 
-@goals.route('/goals/<int:goal_id>/delete', methods=['GET', 'POST'])
-@login_required
-def delete_goal(goal_id):
-    # Deletes users current goal
-    user_id = session.get('user_id')
-
-    goal = NutritionGoal.query.get_or_404(goal_id)
-
-    # User can only delete their own goals (IDOR handling)
-    if goal.user_id != user_id:
-        flash('You cannot delete this goal.', 'warning')
-        return redirect(url_for('goals.view_goals'))
-
-    db.session.delete(goal)
-    db.session.commit()
-    flash('You have successfully deleted this goal.', 'success')
-    return redirect(url_for('goals.view_goals'))
-
-@goals.route('/goals/delete_history', methods=['POST'])
-@login_required
-def delete_history(): # Deletes users entire goal history
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in to delete your goal history.', 'warning')
-        return redirect(url_for('auth.login'))
-
-    user_goals = NutritionGoal.query.filter_by(user_id=user_id).all()
-
-    if not user_goals:
-        flash('No goal history to delete.', 'warning')
-        return redirect(url_for('goals.view_goals'))
-
-    for goal in user_goals:
-        db.session.delete(goal)
-
-    db.session.commit()
-    flash('Your goal history has been deleted.', 'success')
-    return redirect(url_for('goals.view_goals'))
 
 

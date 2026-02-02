@@ -63,7 +63,7 @@ def get_progress_history(user_id: int, days: int = 14):
     if not goal:
         return {"error": "no_goal"}
 
-    # Sum MealLogs per day (ONLY days that have logs will appear)
+    # Sum MealLogs per day
     rows = (
         db.session.query(
             MealLog.date.label("d"),

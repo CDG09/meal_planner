@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-5">
     <h2 class="mb-4">Edit Goal</h2>
-    <form method="POST">
+    <form id="editGoalForm" data-goal-id="{{ goal.id }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <!-- Weight input -->
         <div class="mb-3">
@@ -47,6 +47,8 @@
         output.value = slider.value;
     });
 </script>
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/goals.js') }}"></script>
 {% endblock %}
 
 

@@ -1,125 +1,143 @@
-from datetime import datetime, date
-
+from datetime import datetime, date as dt_date
 from app import db
+from sqlalchemy import String, ForeignKey, Date
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from passlib.hash import sha256_crypt
-from utils.nutrition import bmr_calculation, tdee_calculation, macros_calculation
-from sqlalchemy.dialects.postgresql import JSON
+from utils.nutrition import calc_bmr, estimate_tdee, breakdown_macros
 
 class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    # Columns
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    # Password handling
-    def set_password(self, password):  # To hash passwords before storing
+    # Password handling functions
+
+    # Used to hash passwords before storing
+    def set_password(self, password):
         self.password_hash = sha256_crypt.encrypt(password)
 
-    def check_password(self, password):  # To verify password during login
+    # Used to verify password during login
+    def check_password(self, password):
         return sha256_crypt.verify(password, self.password_hash)
 
-# Represents meals
 class Meal(db.Model):
     __tablename__ = 'meals'
 
-    id = db.Column(db.Integer, primary_key=True) # Primary key
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False) # Foreign key linking meal to user
-    name = db.Column(db.String(80), nullable=False) # Name of meal
-    description = db.Column(db.String(255)) # Meal description
-    added_at = db.Column(db.DateTime, default=db.func.current_timestamp()) # Time meal is stored in the app
-    meal_type = db.Column(db.String(20)) # Breakfast, Lunch, Dinner
-    ingredients_ids = db.Column(db.JSON, nullable=True)
-    ingredients_portions = db.Column(db.JSON, nullable=True)
+    # Keys
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False) # Link between meal and user
 
-    # Nutritional info
-    calories = db.Column(db.Float, default=0.0)
-    protein = db.Column(db.Float, default=0.0)
-    fat = db.Column(db.Float, default=0.0)
-    carbs = db.Column(db.Float, default=0.0)
+    # Meal metadata
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
+    added: Mapped[datetime] = mapped_column(server_default=db.func.current_timestamp(), nullable=False)
 
+    # Meal ingredient info
+    ingredients_ids: Mapped[dict | list | None] = mapped_column(db.JSON, nullable=True)
+    ingredients_portions: Mapped[dict | list | None] = mapped_column(db.JSON, nullable=True)
 
-    user = db.relationship('User', backref=db.backref('meals', lazy=True))
+    # Nutritional macros
+    calories: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    protein: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    fat: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    carbs: Mapped[float] = mapped_column(default=0., nullable=False)
+
+    # Table relationship between users and meals
+    user: Mapped[User] = relationship("User", backref=db.backref('meals', lazy=True))
 
 class MealLog(db.Model):
     __tablename__ = 'meal_logs'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    meal_id = db.Column(db.Integer, db.ForeignKey('meals.id'), nullable=False)
+    # Keys
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    meal_id: Mapped[int] = mapped_column(ForeignKey("meals.id"), nullable=False)
 
-    date = db.Column(db.Date, default=date.today, nullable=False)
-    calories = db.Column(db.Float, nullable=False)
-    protein = db.Column(db.Float, nullable=False)
-    fat = db.Column(db.Float, nullable=False)
-    carbs = db.Column(db.Float, nullable=False)
+    # Log date
+    date: Mapped[dt_date] = mapped_column(Date, default=dt_date.today, nullable=False)
+
+    # Nutritional Macros at logging time
+    calories: Mapped[float] = mapped_column(nullable=False)
+    protein: Mapped[float] = mapped_column(nullable=False)
+    fat: Mapped[float] = mapped_column(nullable=False)
+    carbs: Mapped[float] = mapped_column(nullable=False)
 
 class NutritionGoal(db.Model):
     __tablename__ = 'nutrition_goals'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    # Keys
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    # User input values
-    weight_kg = db.Column(db.Float, nullable=False)
-    height_cm = db.Column(db.Float, nullable=False)
-    age = db.Column(db.Integer, nullable=False)
-    sex = db.Column(db.String(10), nullable=False)
-    activity_level = db.Column(db.String(20), default='sedentary')
-
-    # Slider input value
-    goal_percent = db.Column(db.Float, default=0.0)
+    # User goal inputs
+    weight_kg: Mapped[float] = mapped_column(nullable=False)
+    height_cm: Mapped[float] = mapped_column(nullable=False)
+    age: Mapped[int] = mapped_column(nullable=False)
+    sex: Mapped[str] = mapped_column(String(10), nullable=False)
+    activity_level: Mapped[str] = mapped_column(String(20), default="sedentary")
+    goal_percent: Mapped[float] = mapped_column(default=0.0)
 
     # Calculated values
-    bmr = db.Column(db.Float)
-    tdee = db.Column(db.Float)
-    calories = db.Column(db.Float)
-    protein = db.Column(db.Float)
-    fat = db.Column(db.Float)
-    carbs = db.Column(db.Float)
-    goal_category = db.Column(db.String(20))
+    bmr: Mapped[float | None] = mapped_column(nullable=True)
+    tdee: Mapped[float | None] = mapped_column(nullable=True)
+    calories: Mapped[float | None] = mapped_column(nullable=True)
+    protein: Mapped[float | None] = mapped_column(nullable=True)
+    fat: Mapped[float | None] = mapped_column(nullable=True)
+    carbs: Mapped[float | None] = mapped_column(nullable=True)
+    goal_category: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
-    # Goal Tracking using timestamp
-    created_at = db.Column(db.DateTime, default=datetime.now())
+    # timestamp
+    created_at: Mapped[datetime] = mapped_column(server_default=db.func.now())
 
-    # Relationship to 'User'
-    user = db.relationship('User', backref=db.backref('goals', lazy=True))
+    # Relationship to user and their goals
+    user: Mapped[User] = relationship("User", backref=db.backref("goals", lazy=True))
 
+    # Calculate user goal based on user inputs
     def calculate_goal(self):
-        self.bmr = bmr_calculation(self.weight_kg, self.height_cm, self.age, self.sex)
-        self.tdee = tdee_calculation(self.bmr, self.activity_level)
+        self.bmr = calc_bmr(self.weight_kg, self.height_cm, self.age, self.sex)
+        self.tdee = estimate_tdee(self.bmr, self.activity_level)
 
         # Adjust calories based on slider %
         self.calories = self.tdee * (1 + self.goal_percent / 100)
 
-        # Macros
-        macros = macros_calculation(self.weight_kg, self.calories)
-        self.protein = macros['protein']
-        self.fat = macros['fat']
-        self.carbs = macros['carbs']
+        # Calculate macros
+        macros = breakdown_macros(self.weight_kg, self.calories)
+        self.protein = macros["protein_g"]
+        self.fat = macros["fat_g"]
+        self.carbs = macros["carbs_g"]
 
-        # Determine goal category
+        # Determine goal category (cut/maintain/bulk)
         if self.goal_percent < 0:
-            self.goal_category = 'cut'
+            self.goal_category = "cut"
         elif self.goal_percent == 0:
-            self.goal_category = 'maintain'
+            self.goal_category = "maintain"
         else:
-            self.goal_category = 'bulk'
-        return self
+            self.goal_category = "bulk"
 
+        return self
 
 class DailyGoal(db.Model):
     __tablename__ = 'daily_goals'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    goal_id = db.Column(db.Integer, db.ForeignKey('nutrition_goals.id'), nullable=False)
-    date = db.Column(db.Date, default=date.today, nullable=False)
+    # Keys
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    goal_id: Mapped[int] = mapped_column(ForeignKey("nutrition_goals.id"), nullable=False)
 
-    remaining_calories = db.Column(db.Float, nullable=False)
-    remaining_protein = db.Column(db.Float, nullable=False)
-    remaining_fat = db.Column(db.Float, nullable=False)
-    remaining_carbs = db.Column(db.Float, nullable=False)
+    # timestamp
+    date: Mapped[dt_date] = mapped_column(Date, default=dt_date.today, nullable=False)
 
-    user = db.relationship('User', backref=db.backref('daily_goals', lazy=True))
-    goal = db.relationship('NutritionGoal', backref=db.backref('daily_snapshots', lazy=True,cascade='all, delete-orphan'))
+    # Remaining macros for target
+    remaining_calories: Mapped[float] = mapped_column(nullable=False)
+    remaining_protein: Mapped[float] = mapped_column(nullable=False)
+    remaining_fat: Mapped[float] = mapped_column(nullable=False)
+    remaining_carbs: Mapped[float] = mapped_column(nullable=False)
+
+    # Relationship with user
+    user: Mapped[User] = relationship("User", backref=db.backref("daily_goals", lazy=True))
+
+    # Relationship with goal
+    goal: Mapped[NutritionGoal] = relationship("NutritionGoal", backref=db.backref('daily_snapshots', lazy=True,cascade='all, delete-orphan'))

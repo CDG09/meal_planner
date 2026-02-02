@@ -10,7 +10,7 @@ from models import User, NutritionGoal, Meal
 
 class TestAPIEndpoints(unittest.TestCase):
     def setUp(self):
-        self.app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "SQLALCHEMY_TRACK_MODIFICATIONS": False, "SECRET_KEY": "test-secret",})
+        self.app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "SQLALCHEMY_TRACK_MODIFICATIONS": False, "SECRET_KEY": "test-secret","AUTO_CREATE_TABLES": False,})
         self.client = self.app.test_client()
         self.ctx = self.app.app_context()
         self.ctx.push()

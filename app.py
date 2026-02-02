@@ -4,36 +4,43 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from config import Config
+from utils.mongo import close_mongo_client
 import os
 
-
-#Initialize SQLAlchemy
+# Initialize flask extensions
 db = SQLAlchemy()
-
-# Call CSRF protection function
 csrf = CSRFProtect()
-
-# Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-def create_app(test_config: dict | None = None):
-    # Initialize Flask app
+# App factory
+def create_app(test_config=None):
+    # Initialize the app
     app = Flask(__name__)
-    app.config.from_object(Config)
 
-    if test_config:
+    # App config
+    if test_config is None:
+        app.config.from_object(Config)
+    else:
         app.config.update(test_config)
 
+    # Attach extensions to current config
     db.init_app(app)
-    csrf.init_app(app) # Initiate CSRF protection within the app
-    limiter.init_app(app) # Initiate rate limiting
-    with app.app_context():
-        from models import User, Meal, NutritionGoal
+    csrf.init_app(app)
+    limiter.init_app(app)
 
-        if not app.config.get("TESTING", False) and os.getenv("AUTO_CREATE_TABLES", "1") == "1":
+    @app.teardown_appcontext
+    def _close_mongo(exception=None):
+        close_mongo_client()
+
+    # Create application context for current app
+    with app.app_context():
+        import models
+
+        # Create db tables if not already existing
+        if app.config.get("AUTO_CREATE_TABLES", False):
             db.create_all()
 
-    # Blueprints
+    # Initialize blueprints within the current app
 
     # Goals routes
     from routes.goals_routes import goals
@@ -59,11 +66,7 @@ def create_app(test_config: dict | None = None):
     from api.api_routes import api
     app.register_blueprint(api)
 
-    # Dev / Cloud function routes
-    from routes.dev_routes import dev
-    app.register_blueprint(dev)
-
-    # Context processors
+    # Inject user context into jinja templates
     @app.context_processor
     def inject_user():
         from models import User
@@ -71,26 +74,25 @@ def create_app(test_config: dict | None = None):
         user = User.query.get(user_id) if user_id else None
         return dict(current_user=user)
 
-    # Routes
+    # root route
     @app.route('/')
     def home():
         return render_template('home.html', active_page='home')
 
+    # Global security headers
     @app.after_request
-    def add_security_header(response):
+    def add_security_headers(response):
         # Prevent file type sniffing (Mime)
         response.headers["X-Content-Type-Options"] = "nosniff"
         # Prevent click-jacking
         response.headers["X-Frame-Options"] = "DENY"
         # Introduce a strict Referrer policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        # Content security policy
         return response
 
     return app
 
-app = None
-
+# Run the app
 if __name__ == "__main__":
     app = create_app()
     app.run()

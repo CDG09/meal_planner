@@ -6,7 +6,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.environ.get('SECRET_KEY')
     MONGO_URI = os.environ.get('MONGO_URI')
+    MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'mealplanner')
     API_TOKEN = os.environ.get('API_TOKEN')
+    AUTO_CREATE_TABLES = True
 
     # cookie flags
     SESSION_COOKIE_HTTPONLY = True # Prevents session IDs being stolen from XSS attacks

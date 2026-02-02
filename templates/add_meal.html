@@ -30,7 +30,7 @@
     </div>
 
     <!-- Form to add a meal -->
-    <form action="{{ url_for('meal.add_meal') }}" method="POST">
+    <form id="addMealForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="ingredient_ids" id="ingredient-ids">
         <input type="hidden" name="ingredients_portions" id="ingredients-portions">
@@ -73,6 +73,7 @@
 </div>
 
 <!-- JS -->
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script src="{{ url_for('static', filename='js/add_meal.js') }}"></script>
 {% endblock %}
 

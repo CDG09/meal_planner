@@ -2,13 +2,13 @@ import os
 import requests
 from requests_oauthlib import OAuth1
 
-# Environment variables
-UNIT_TESTING = os.getenv("UNIT_TESTING") == "1"
+# Check for test environment
+IS_TESTING = os.getenv("UNIT_TESTING") == "1"
 FATSECRET_BASE_URL = "https://platform.fatsecret.com/rest/server.api"
 
-
-def check_configured():
-    if UNIT_TESTING:
+# Sanity check fatsecret configuration
+def check_fatsecret_config():
+    if IS_TESTING:
         return
 
     FATSECRET_CONSUMER_KEY = os.getenv("FATSECRET_CONSUMER_KEY")
@@ -18,39 +18,40 @@ def check_configured():
         raise RuntimeError("FatSecret API not configured.")
     return FATSECRET_CONSUMER_KEY, FATSECRET_CONSUMER_SECRET
 
-# OAuth Details
-def oauth():
-    if UNIT_TESTING:
-        return OAuth1(client_key="test", client_secret="test", signature_method="HMAC-SHA1")
+# OAuth details
+def fatsecret_oauth():
+    if IS_TESTING:
+        return OAuth1("test", "test", signature_method="HMAC-SHA1")
 
-    FATSECRET_CONSUMER_KEY, FATSECRET_CONSUMER_SECRET = check_configured()
+    FATSECRET_CONSUMER_KEY, FATSECRET_CONSUMER_SECRET = check_fatsecret_config()
+
     return OAuth1(
         client_key=FATSECRET_CONSUMER_KEY,
         client_secret=FATSECRET_CONSUMER_SECRET,
         signature_method='HMAC-SHA1',
     )
 
+# Conversions
 def convert_to_float(value):
     try:
         return float(value)
     except (TypeError, ValueError):
         return None
 
-def _serving_to_grams(metric_amount, unit):
-    if metric_amount is None:
+def to_grams(amount, unit):
+    if amount is None:
         return None
 
     unit = (unit or "g").lower().strip()
 
     if unit == "g":
-        return metric_amount
+        return amount
     if unit == "oz":
-        return metric_amount * 28
+        return amount * 28
     if unit == "ml":
-        return metric_amount
+        return amount
     else:
         return None
-
 
 
 # API Calls
@@ -65,7 +66,7 @@ def search_foods(query, max_results=10, page=0):
     response = requests.get(
         FATSECRET_BASE_URL,
         params=params,
-        auth=oauth(),
+        auth=fatsecret_oauth(),
         timeout=10
     )
     response.raise_for_status()
@@ -93,7 +94,7 @@ def get_food_by_id(food_id):
     response = requests.get(
         FATSECRET_BASE_URL,
         params=params,
-        auth=oauth(),
+        auth=fatsecret_oauth(),
         timeout=10
     )
     response.raise_for_status()
@@ -114,7 +115,7 @@ def get_food_by_id(food_id):
     # Metric serving size
     metric_amount = convert_to_float(serving.get("metric_amount"))
     metric_unit = (serving.get("serving_amount_unit") or "g").lower().strip()
-    serving_grams = _serving_to_grams(metric_amount, metric_unit)
+    serving_grams = to_grams(metric_amount, metric_unit)
     serving_ml = metric_amount if metric_unit == "ml" else None
 
 

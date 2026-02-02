@@ -7,7 +7,7 @@ auth = Blueprint('auth', __name__)
 
 # Registration
 @auth.route('/register', methods=['GET', 'POST'])
-@limiter.limit("3/minute")
+@limiter.limit("5/minute")
 def register():
     if request.method == 'POST':
         username = request.form['username'].strip().lower()
@@ -36,7 +36,7 @@ def register():
 
 # Login
 @auth.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5/minute")
+@limiter.limit("10/minute")
 def login():
     if request.method == 'POST':
         username = request.form.get('username').strip().lower()

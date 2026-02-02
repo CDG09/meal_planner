@@ -32,12 +32,11 @@
                     <a href="{{ url_for('goals.edit_goal', goal_id=goal.id) }}" class="btn btn-sm btn-warning">Edit</a>
 
                     <!-- Delete single goal -->
-                    <form action="{{ url_for('goals.delete_goal', goal_id=goal.id) }}" method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this goal?');">
-                            Delete
-                        </button>
-                    </form>
+                    <button type="button"
+                            class="btn btn-sm btn-danger"
+                            onclick="deleteGoal({{ goal.id }})">
+                        Delete
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -45,17 +44,18 @@
     </table>
 
     <!-- Delete all history button -->
-    <form action="{{ url_for('goals.delete_history') }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all goals?');">
-            Delete All Goals / History
-        </button>
-    </form>
+    <button type="button"
+            class="btn btn-danger"
+            onclick="deleteGoalHistory()">
+        Delete All Goals / History
+    </button>
 
     {% else %}
     <p>No goals found. Start by <a href="{{ url_for('goals.new_goal') }}">adding a new goal</a>.</p>
     {% endif %}
 </div>
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/goals.js') }}"></script>
 {% endblock %}
 
 
