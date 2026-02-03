@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a7f5f7b-d46b-4037-be8d-69e48be96429" name="Changes" comment="General structure updates">
-      <change afterPath="$PROJECT_DIR$/app.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+    <list default="true" id="2a7f5f7b-d46b-4037-be8d-69e48be96429" name="Changes" comment="Added files to needed to deploy on cloud">
+      <change afterPath="$PROJECT_DIR$/cloudbuild.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -168,7 +168,7 @@
       <workItem from="1769864540982" duration="9749000" />
       <workItem from="1769878623779" duration="8536000" />
       <workItem from="1770033088378" duration="20354000" />
-      <workItem from="1770064885380" duration="7612000" />
+      <workItem from="1770064885380" duration="19055000" />
     </task>
     <task id="LOCAL-00001" summary="Skeleton for the program is created including initial templates.">
       <option name="closed" value="true" />
@@ -290,7 +290,15 @@
       <option name="project" value="LOCAL" />
       <updated>1770073921120</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Added files to needed to deploy on cloud">
+      <option name="closed" value="true" />
+      <created>1770076260661</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1770076260661</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -323,7 +331,8 @@
     <MESSAGE value="Added logging and portions to meal" />
     <MESSAGE value="Added progress tracking" />
     <MESSAGE value="General structure updates" />
-    <option name="LAST_COMMIT_MESSAGE" value="General structure updates" />
+    <MESSAGE value="Added files to needed to deploy on cloud" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added files to needed to deploy on cloud" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -342,6 +351,6 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/meal_planner$meal_planner.coverage" NAME="meal_planner Coverage Results" MODIFIED="1770073322291" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/meal_planner$meal_planner.coverage" NAME="meal_planner Coverage Results" MODIFIED="1770092953745" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
